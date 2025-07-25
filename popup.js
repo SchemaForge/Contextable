@@ -4,6 +4,7 @@ class SchemaForgePopup {
     this.schemas = [];
     this.activeSchema = null;
     this.isActive = false;
+    this.currentPage = 'schemas';
     
     this.init();
   }
@@ -34,6 +35,7 @@ class SchemaForgePopup {
   setupEventListeners() {
     const toggleBtn = document.getElementById('toggle-btn');
     const schemaSelect = document.getElementById('schema-select');
+    const navTabs = document.querySelectorAll('.nav-tab');
     
     toggleBtn.addEventListener('click', () => {
       this.toggleActive();
@@ -42,6 +44,35 @@ class SchemaForgePopup {
     schemaSelect.addEventListener('change', (e) => {
       this.setActiveSchema(e.target.value);
     });
+    
+    navTabs.forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        const page = e.target.getAttribute('data-page');
+        this.switchPage(page);
+      });
+    });
+  }
+  
+  switchPage(page) {
+    this.currentPage = page;
+    
+    // Update nav tabs
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+      tab.classList.remove('active');
+      if (tab.getAttribute('data-page') === page) {
+        tab.classList.add('active');
+      }
+    });
+    
+    // Update page content
+    document.querySelectorAll('.page').forEach(pageElement => {
+      pageElement.classList.remove('active');
+    });
+    
+    const targetPage = document.getElementById(`${page}-page`);
+    if (targetPage) {
+      targetPage.classList.add('active');
+    }
   }
   
   async toggleActive() {
@@ -116,12 +147,12 @@ class SchemaForgePopup {
     
     if (this.activeSchema) {
       preview.style.display = 'block';
-      preview.innerHTML = \`
-        <h4>\${this.activeSchema.company.name}</h4>
-        <div class="detail">Industry: \${this.activeSchema.company.industry}</div>
-        <div class="detail">Tone: \${this.activeSchema.company.tone}</div>
-        <div class="detail">Target: \${this.activeSchema.personas[0].name}</div>
-      \`;
+      preview.innerHTML = `
+        <h4>${this.activeSchema.company.name}</h4>
+        <div class="detail">Industry: ${this.activeSchema.company.industry}</div>
+        <div class="detail">Tone: ${this.activeSchema.company.tone}</div>
+        <div class="detail">Target: ${this.activeSchema.personas[0].name}</div>
+      `;
     } else {
       preview.style.display = 'none';
     }
@@ -131,7 +162,7 @@ class SchemaForgePopup {
     const status = document.getElementById('status');
     
     if (this.isActive && this.activeSchema) {
-      status.textContent = \`Active: \${this.activeSchema.name} schema will enhance prompts\`;
+      status.textContent = `Active: ${this.activeSchema.name} schema will enhance prompts`;
       status.className = 'status active';
     } else if (this.isActive) {
       status.textContent = 'Active but no schema selected';
