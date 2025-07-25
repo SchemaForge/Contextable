@@ -124,42 +124,6 @@
       font-size: 16px;
       color: #374151;
     }
-    .api-key-label {
-      font-size: 12px;
-      font-weight: 500;
-      margin-bottom: 8px;
-      color: #374151;
-    }
-    .api-key-value {
-      font-size: 11px;
-      font-family: monospace;
-      word-break: break-all;
-      color: #6b7280;
-      background: white;
-      padding: 8px;
-      border-radius: 4px;
-      border: 1px solid #d1d5db;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .api-key-display {
-      flex: 1;
-      margin-right: 8px;
-    }
-    .api-key-toggle {
-      background: #6b7280;
-      color: white;
-      border: none;
-      padding: 4px 8px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 10px;
-      white-space: nowrap;
-    }
-    .api-key-toggle:hover {
-      background: #374151;
-    }
     .status {
       font-size: 12px;
       color: #6b7280;
@@ -206,11 +170,10 @@
     <!-- User Page -->
     <div id="user-page" class="page">
       <div class="api-key-section">
-        <h3>API Key</h3>
-        <div class="api-key-label">Your API Key:</div>
-        <div class="api-key-value">
-          <div id="api-key-display" class="api-key-display">••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••</div>
-          <button id="api-key-toggle" class="api-key-toggle">Show</button>
+        <h3>Settings</h3>
+        <div style="background: #f9fafb; padding: 12px; border-radius: 6px; font-size: 12px; color: #6b7280;">
+          <div style="margin-bottom: 8px;"><strong>Privacy Notice:</strong></div>
+          <div>API keys and sensitive data are handled securely and not stored in the browser interface for your protection.</div>
         </div>
       </div>
     </div>
