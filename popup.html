@@ -139,6 +139,26 @@
       padding: 8px;
       border-radius: 4px;
       border: 1px solid #d1d5db;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .api-key-display {
+      flex: 1;
+      margin-right: 8px;
+    }
+    .api-key-toggle {
+      background: #6b7280;
+      color: white;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 10px;
+      white-space: nowrap;
+    }
+    .api-key-toggle:hover {
+      background: #374151;
     }
     .status {
       font-size: 12px;
@@ -188,7 +208,10 @@
       <div class="api-key-section">
         <h3>API Key</h3>
         <div class="api-key-label">Your API Key:</div>
-        <div class="api-key-value">ctx_0f898399ac7705277c61cbc7ea04a1381df2a26248da9313c6ed5cb19b01f939</div>
+        <div class="api-key-value">
+          <div id="api-key-display" class="api-key-display">••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••</div>
+          <button id="api-key-toggle" class="api-key-toggle">Show</button>
+        </div>
       </div>
     </div>
   </div>
