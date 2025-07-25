@@ -4,6 +4,8 @@ class SchemaForgePopup {
     this.activeSchema = null;
     this.isActive = false;
     this.currentPage = 'schemas';
+    this.apiKey = 'ctx_0f898399ac7705277c61cbc7ea04a1381df2a26248da9313c6ed5cb19b01f939';
+    this.isApiKeyVisible = false;
     
     this.init();
   }
@@ -38,6 +40,7 @@ class SchemaForgePopup {
     const toggleBtn = document.getElementById('toggle-btn');
     const schemaSelect = document.getElementById('schema-select');
     const navTabs = document.querySelectorAll('.nav-tab');
+    const apiKeyToggle = document.getElementById('api-key-toggle');
     
     toggleBtn.addEventListener('click', () => {
       this.toggleActive();
@@ -52,6 +55,10 @@ class SchemaForgePopup {
         const page = e.target.getAttribute('data-page');
         this.switchPage(page);
       });
+    });
+    
+    apiKeyToggle.addEventListener('click', () => {
+      this.toggleApiKeyVisibility();
     });
   }
   
@@ -116,11 +123,30 @@ class SchemaForgePopup {
     }
   }
   
+  toggleApiKeyVisibility() {
+    this.isApiKeyVisible = !this.isApiKeyVisible;
+    this.updateApiKeyDisplay();
+  }
+
+  updateApiKeyDisplay() {
+    const display = document.getElementById('api-key-display');
+    const toggle = document.getElementById('api-key-toggle');
+    
+    if (this.isApiKeyVisible) {
+      display.textContent = this.apiKey;
+      toggle.textContent = 'Hide';
+    } else {
+      display.textContent = '••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••';
+      toggle.textContent = 'Show';
+    }
+  }
+
   updateUI() {
     this.updateToggleButton();
     this.updateSchemaSelect();
     this.updateSchemaPreview();
     this.updateStatus();
+    this.updateApiKeyDisplay();
   }
   
   updateToggleButton() {
