@@ -1,4 +1,3 @@
-// ===== popup.js =====
 class SchemaForgePopup {
   constructor() {
     this.schemas = [];
@@ -13,6 +12,8 @@ class SchemaForgePopup {
     await this.loadData();
     this.setupEventListeners();
     this.updateUI();
+    // Ensure the initial page state is properly set
+    this.switchPage(this.currentPage);
   }
   
   async loadData() {
@@ -26,6 +27,7 @@ class SchemaForgePopup {
       if (response) {
         this.schemas = response.schemas || [];
         this.activeSchema = response.activeSchema;
+        this.isActive = response.isActive || false;
       }
     } catch (error) {
       console.error('Failed to load data:', error);
@@ -54,6 +56,7 @@ class SchemaForgePopup {
   }
   
   switchPage(page) {
+    console.log('Switching to page:', page);
     this.currentPage = page;
     
     // Update nav tabs
@@ -70,8 +73,12 @@ class SchemaForgePopup {
     });
     
     const targetPage = document.getElementById(`${page}-page`);
+    console.log('Target page found:', targetPage);
     if (targetPage) {
       targetPage.classList.add('active');
+      console.log('Page switched successfully to:', page);
+    } else {
+      console.error('Could not find page element with id:', `${page}-page`);
     }
   }
   
