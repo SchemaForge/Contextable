@@ -412,7 +412,7 @@ class SchemaForge {
                   this.isLoadingSchemas ? 
                   '<option value="">Loading schemas...</option>' : 
                   this.schemas.length > 0 ? 
-                  '<option value="">No Schema</option>' + this.schemas.map(s => `<option value="${s.id}" ${this.activeSchema && s.id === this.activeSchema.id ? 'selected' : ''}>${s.name}</option>`).join('') :
+                  this.schemas.map(s => `<option value="${s.id}" ${this.activeSchema && s.id === this.activeSchema.id ? 'selected' : ''}>${s.name}</option>`).join('') :
                   '<option value="">No schemas available</option>'
                 }
               </select>
