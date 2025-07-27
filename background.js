@@ -4,7 +4,7 @@ chrome.action.onClicked.addListener(async (tab) => {
     try {
       await chrome.tabs.sendMessage(tab.id, { action: 'toggleWidget' });
     } catch (error) {
-      console.log('ContextOS: Content script not ready, injecting...');
+              console.log('Contextable: Content script not ready, injecting...');
       // Content script might not be loaded yet, inject it
       try {
         await chrome.scripting.executeScript({
@@ -16,11 +16,11 @@ chrome.action.onClicked.addListener(async (tab) => {
           try {
             await chrome.tabs.sendMessage(tab.id, { action: 'toggleWidget' });
           } catch (retryError) {
-            console.error('ContextOS: Failed to send message after injection:', retryError);
+                            console.error('Contextable: Failed to send message after injection:', retryError);
           }
         }, 1000);
       } catch (injectionError) {
-        console.error('ContextOS: Failed to inject content script:', injectionError);
+                    console.error('Contextable: Failed to inject content script:', injectionError);
       }
     }
   }

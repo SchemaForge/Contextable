@@ -1,7 +1,7 @@
 // Simple Working SchemaForge Chrome Extension
 // Replace your entire content.js with this clean version
 
-console.log('ContextOS: Loading extension...');
+console.log('Contextable: Loading extension...');
 
 class SchemaForge {
   constructor() {
@@ -27,13 +27,13 @@ class SchemaForge {
       this.apiKey = result.apiKey || null;
       return this.apiKey;
     } catch (error) {
-      console.error('ContextOS: Failed to load API key:', error);
+                console.error('Contextable: Failed to load API key:', error);
       return null;
     }
   }
 
   async init() {
-    console.log('ContextOS: Initializing...');
+          console.log('Contextable: Initializing...');
     this.createWidget();
     
     // Load API key first
@@ -41,31 +41,31 @@ class SchemaForge {
     
     // Load schemas from API only if we have an API key
     if (this.apiKey) {
-      console.log('ContextOS: API key found, loading schemas...');
+                console.log('Contextable: API key found, loading schemas...');
       try {
         const result = await this.loadSchemasFromAPI();
         if (result.success) {
-          console.log(`ContextOS: Successfully loaded ${result.schemaCount} schemas and ready for use`);
+                      console.log(`Contextable: Successfully loaded ${result.schemaCount} schemas and ready for use`);
           // Show the Schemas tab since we have a valid API and loaded schemas
           this.currentWidgetPage = 'schemas';
           this.updateWidget();
           // Show a brief success message
           setTimeout(() => {
-            this.showMessage(`ContextOS ready! ${result.schemaCount} schema${result.schemaCount !== 1 ? 's' : ''} loaded.`, 'success');
+            this.showMessage(`Contextable ready! ${result.schemaCount} schema${result.schemaCount !== 1 ? 's' : ''} loaded.`, 'success');
           }, 1000);
         }
       } catch (error) {
-        console.error('ContextOS: Failed to load schemas during initialization:', error);
+                  console.error('Contextable: Failed to load schemas during initialization:', error);
         this.isLoadingSchemas = false;
         this.updateWidget();
       }
     } else {
-      console.log('ContextOS: No API key found, please configure in settings');
+              console.log('Contextable: No API key found, please configure in settings');
       this.isLoadingSchemas = false;
       this.updateWidget();
       // Show a message to guide user to configure API key
       setTimeout(() => {
-        this.showMessage('Please configure your API key in the settings (⚙️ button)', 'info');
+                    this.showMessage('Please configure your API key', 'info');
       }, 2000);
     }
     
@@ -79,7 +79,7 @@ class SchemaForge {
     if (document.readyState !== 'complete') {
       window.addEventListener('load', () => {
         setTimeout(() => {
-          console.log('ContextOS: Page fully loaded, verifying button positions');
+          console.log('Contextable: Page fully loaded, verifying button positions');
           const enhanceButton = document.getElementById('sf-enhance-btn');
           const settingsButton = document.getElementById('sf-settings-btn');
           
@@ -103,7 +103,7 @@ class SchemaForge {
     }
     
     try {
-      console.log('ContextOS: Loading schemas from API...');
+      console.log('Contextable: Loading schemas from API...');
       const response = await fetch(`${this.apiUrl}?api_key=${apiKeyToUse}`);
       
       if (!response.ok) {
@@ -151,7 +151,7 @@ class SchemaForge {
         if (!testApiKey) {
           this.schemas = schemas;
           this.activeSchema = this.schemas.length > 0 ? this.schemas[0] : null;
-          console.log('ContextOS: Loaded', this.schemas.length, 'schemas from API');
+          console.log('Contextable: Loaded', this.schemas.length, 'schemas from API');
           this.isLoadingSchemas = false;
           this.updateWidget();
           
@@ -168,7 +168,7 @@ class SchemaForge {
       }
       
     } catch (error) {
-      console.error('ContextOS: Failed to load schemas from API:', error);
+              console.error('Contextable: Failed to load schemas from API:', error);
       
       if (!testApiKey) {
         this.isLoadingSchemas = false;
@@ -202,12 +202,12 @@ class SchemaForge {
           mutation.removedNodes.forEach((node) => {
             if (node.id === 'sf-enhance-btn' || 
                 (node.nodeType === Node.ELEMENT_NODE && node.querySelector('#sf-enhance-btn'))) {
-              console.log('ContextOS: Enhance button removed by DOM change, will recreate');
+              console.log('Contextable: Enhance button removed by DOM change, will recreate');
               shouldRecreateEnhanceButton = true;
             }
             if (node.id === 'sf-settings-btn' || 
                 (node.nodeType === Node.ELEMENT_NODE && node.querySelector('#sf-settings-btn'))) {
-              console.log('ContextOS: Settings button removed by DOM change, will recreate');
+              console.log('Contextable: Settings button removed by DOM change, will recreate');
               shouldRecreateSettingsButton = true;
             }
           });
@@ -226,7 +226,7 @@ class SchemaForge {
         // Debounce rapid changes
         clearTimeout(this.recreateTimeout);
         this.recreateTimeout = setTimeout(() => {
-          console.log('ContextOS: Recreating buttons due to DOM changes');
+                      console.log('Contextable: Recreating buttons due to DOM changes');
           if (shouldRecreateEnhanceButton) {
             this.createEnhanceButtonWithRetry();
           }
@@ -243,14 +243,14 @@ class SchemaForge {
       subtree: true
     });
     
-    console.log('ContextOS: Mutation observer set up');
+            console.log('Contextable: Mutation observer set up');
   }
 
   createEnhanceButtonWithRetry(attempts = 0) {
     const maxAttempts = 8; // Increased attempts for better reliability
     const delay = attempts < 3 ? 500 : 1000; // Shorter delay for first attempts
     
-    console.log('ContextOS: Attempting to create button, attempt:', attempts + 1);
+            console.log('Contextable: Attempting to create button, attempt:', attempts + 1);
     this.createEnhanceButton();
     
                 // Check if button was successfully created and properly positioned
@@ -261,23 +261,23 @@ class SchemaForge {
         
         // Don't retry if schema has already been injected
         if (this.hasInjectedSchema) {
-          console.log('ContextOS: Stopping retry - schema already injected');
+          console.log('Contextable: Stopping retry - schema already injected');
           return;
         }
 
         if (!button && attempts < maxAttempts) {
-          console.log('ContextOS: Button not found, retrying...');
+          console.log('Contextable: Button not found, retrying...');
           this.createEnhanceButtonWithRetry(attempts + 1);
         } else if (button && !searchButton && attempts < maxAttempts) {
-          console.log('ContextOS: Button created but search button not found, retrying...');
+          console.log('Contextable: Button created but search button not found, retrying...');
           button.remove(); // Remove and retry for better positioning
           this.createEnhanceButtonWithRetry(attempts + 1);
         } else if (button) {
-          console.log('ContextOS: Button successfully created and positioned');
+          console.log('Contextable: Button successfully created and positioned');
           // Verify positioning is correct
           this.verifyButtonPosition(button);
         } else {
-          console.log('ContextOS: Failed to create button after', maxAttempts, 'attempts');
+          console.log('Contextable: Failed to create button after', maxAttempts, 'attempts');
         }
       }, delay);
   }
@@ -319,14 +319,14 @@ class SchemaForge {
       return `✨ Enhance with ${this.activeSchema.name} `;
     }
     
-    // Default to "ContextOS" for initial load and before user selects a schema
-    return '✨ Enhance with ContextOS ';
+            // Default to "Contextable" for initial load and before user selects a schema
+        return '✨ Enhance with Contextable ';
   }
 
   hideButtonAfterInjection() {
     const button = document.getElementById('sf-enhance-btn');
     if (button) {
-      console.log('ContextOS: Hiding button after successful schema injection');
+      console.log('Contextable: Hiding button after successful schema injection');
       
       // Add fade-out animation
       button.style.transition = 'all 0.3s ease';
@@ -338,7 +338,7 @@ class SchemaForge {
       setTimeout(() => {
         if (button && button.parentNode) {
           button.remove();
-          console.log('ContextOS: Button removed from DOM after injection');
+          console.log('Contextable: Button removed from DOM after injection');
         }
       }, 300); // Wait for fade-out animation to complete
     }
@@ -348,7 +348,7 @@ class SchemaForge {
     // Wait a short moment to ensure positioning is complete, then show the button
     setTimeout(() => {
       if (button && button.parentNode) {
-        console.log('ContextOS: Showing button after positioning complete');
+        console.log('Contextable: Showing button after positioning complete');
         button.style.opacity = '1';
         button.style.visibility = 'visible';
         
@@ -374,10 +374,10 @@ class SchemaForge {
     // Ensure button is properly positioned and visible
     const rect = button.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) {
-      console.log('ContextOS: Button has zero dimensions, repositioning...');
+              console.log('Contextable: Button has zero dimensions, repositioning...');
       setTimeout(() => this.createEnhanceButtonWithRetry(), 1000);
     } else {
-      console.log('ContextOS: Button positioning verified - width:', rect.width, 'height:', rect.height);
+              console.log('Contextable: Button positioning verified - width:', rect.width, 'height:', rect.height);
       // Ensure button is shown after verification (only if it hasn't been shown before)
       if (!this.buttonHasBeenShown) {
         this.showButtonAfterPositioning(button);
@@ -406,7 +406,7 @@ class SchemaForge {
       <div style="background: white; border: 2px solid #3b82f6; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; width: 100%;">
         <!-- Header -->
         <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
-          <h1 style="margin: 0; font-size: 18px; font-weight: 600;">ContextOS</h1>
+          <h1 style="margin: 0; font-size: 18px; font-weight: 600;">Contextable</h1>
           <p style="margin: 4px 0 0 0; opacity: 0.9; font-size: 12px;">AI Context Enhancement</p>
         </div>
         
@@ -650,7 +650,7 @@ class SchemaForge {
   }
 
   switchWidgetPage(page) {
-    console.log('ContextOS: Switching widget page to:', page);
+          console.log('Contextable: Switching widget page to:', page);
     this.currentWidgetPage = page;
     this.updateWidget();
   }
@@ -660,7 +660,7 @@ class SchemaForge {
       await chrome.storage.local.set({ apiKey: apiKey });
       this.apiKey = apiKey;
       
-      console.log('ContextOS: API key saved successfully to storage');
+              console.log('Contextable: API key saved successfully to storage');
       
       // Load schemas after saving API key
       this.isLoadingSchemas = true;
@@ -675,18 +675,18 @@ class SchemaForge {
           // Create/update enhance button now that we have valid API and schemas
           this.createEnhanceButtonWithRetry();
           
-          console.log(`ContextOS: API key saved and ${result.schemaCount} schemas loaded successfully`);
+          console.log(`Contextable: API key saved and ${result.schemaCount} schemas loaded successfully`);
           return { success: true, schemaCount: result.schemaCount };
         } else {
           throw new Error(result.error || 'Failed to load schemas');
         }
       } catch (error) {
-        console.error('ContextOS: Failed to load schemas after saving API key:', error);
+                  console.error('Contextable: Failed to load schemas after saving API key:', error);
         this.showWidgetApiStatus('API key saved but failed to load schemas: ' + error.message, 'error');
         throw error;
       }
     } catch (error) {
-      console.error('ContextOS: Failed to save API key:', error);
+              console.error('Contextable: Failed to save API key:', error);
       this.showWidgetApiStatus('Failed to save API key', 'error');
       throw error;
     }
@@ -735,12 +735,12 @@ class SchemaForge {
           this.showWidgetApiStatus(`🎉 Schemas are now ready! Switch to the Schemas tab to select one.`, 'success');
         }, 2000);
         
-        console.log(`ContextOS: API key validated and ${schemaCount} schemas loaded successfully`);
+        console.log(`Contextable: API key validated and ${schemaCount} schemas loaded successfully`);
       } else {
         throw new Error(result.error || 'Unknown error occurred');
       }
     } catch (error) {
-      console.error('ContextOS: Failed to test API key:', error);
+              console.error('Contextable: Failed to test API key:', error);
       
       // Enhanced error messaging based on error type
       let errorMessage = 'Connection failed: ';
@@ -789,7 +789,7 @@ class SchemaForge {
       }, 5000);
     }
     
-    console.log('ContextOS: Widget created');
+          console.log('Contextable: Widget created');
   }
 
   updateWidget() {
@@ -799,24 +799,24 @@ class SchemaForge {
   }
 
   createEnhanceButton() {
-    console.log('ContextOS: createEnhanceButton called, isActive:', this.isActive);
+          console.log('Contextable: createEnhanceButton called, isActive:', this.isActive);
     
     // Remove existing
     const existing = document.getElementById('sf-enhance-btn');
     if (existing) {
-      console.log('ContextOS: Removing existing button');
+              console.log('Contextable: Removing existing button');
       existing.remove();
     }
 
     // Only show button when extension is active
     if (!this.isActive) {
-      console.log('ContextOS: Button hidden - extension inactive');
+              console.log('Contextable: Button hidden - extension inactive');
       return;
     }
 
     // Don't create button if schema has already been injected
     if (this.hasInjectedSchema) {
-      console.log('ContextOS: Button not created - schema already injected');
+              console.log('Contextable: Button not created - schema already injected');
       return;
     }
 
@@ -826,24 +826,24 @@ class SchemaForge {
     
     // Get native button styling reference
     const nativeButton = this.findNativeButton();
-    console.log('ContextOS: Found native button:', nativeButton);
+            console.log('Contextable: Found native button:', nativeButton);
     const baseButtonStyle = this.getNativeButtonStyle(nativeButton);
-    console.log('ContextOS: Base button style:', baseButtonStyle);
+          console.log('Contextable: Base button style:', baseButtonStyle);
     
         // Always position button at bottom right for better visibility
-    console.log('ContextOS: Positioning button at bottom right');
+            console.log('Contextable: Positioning button at bottom right');
     this.positionButtonFallback(button, baseButtonStyle);
     
     button.onclick = () => this.enhancePrompt();
     
-    console.log('ContextOS: Button created and appended. Element:', button);
-    console.log('ContextOS: Button in DOM:', document.getElementById('sf-enhance-btn'));
+          console.log('Contextable: Button created and appended. Element:', button);
+      console.log('Contextable: Button in DOM:', document.getElementById('sf-enhance-btn'));
   }
 
   insertButtonIntoContainer(button, container, baseButtonStyle) {
     // Determine native buttons bottom position before insertion
     const nativeButtonsBottom = this.determineNativeButtonsBottom(container);
-    console.log('ContextOS: Native buttons bottom for container insertion:', nativeButtonsBottom);
+          console.log('Contextable: Native buttons bottom for container insertion:', nativeButtonsBottom);
     
     // Insert button into container with proper styling
     const hideInitially = !this.buttonHasBeenShown;
@@ -937,14 +937,14 @@ class SchemaForge {
     });
     
     if (buttons.length === 0) {
-      console.log('ContextOS: No native buttons found for bottom determination');
+              console.log('Contextable: No native buttons found for bottom determination');
       return null;
     }
     
     // Get all button bottom positions
     const bottomPositions = buttons.map(btn => {
       const rect = btn.getBoundingClientRect();
-      console.log('ContextOS: Button bottom position:', btn, rect.bottom);
+              console.log('Contextable: Button bottom position:', btn, rect.bottom);
       return rect.bottom;
     });
     
@@ -958,14 +958,14 @@ class SchemaForge {
       return Math.abs(rect.bottom - maxBottom) <= tolerance;
     });
     
-    console.log(`ContextOS: Found ${alignedButtons.length} buttons aligned at bottom ${maxBottom}`);
+          console.log(`Contextable: Found ${alignedButtons.length} buttons aligned at bottom ${maxBottom}`);
     
     // Return the determined bottom position
     return maxBottom;
   }
 
   findSearchButton(container) {
-    console.log('ContextOS: Searching for search button...');
+          console.log('Contextable: Searching for search button...');
     
     // Strategy 1: Look for buttons with search-related attributes
     const searchSelectors = [
@@ -983,7 +983,7 @@ class SchemaForge {
       if (button) {
         const rect = button.getBoundingClientRect();
         if (rect.width > 0 && rect.height > 0) {
-          console.log('ContextOS: Found search button via selector:', selector, button);
+          console.log('Contextable: Found search button via selector:', selector, button);
           return button;
         }
       }
@@ -1003,7 +1003,7 @@ class SchemaForge {
       if (textContent.includes('search') || 
           ariaLabel.includes('search') || 
           title.includes('search')) {
-        console.log('ContextOS: Found search button via text content:', button);
+                  console.log('Contextable: Found search button via text content:', button);
         return button;
       }
     }
@@ -1030,7 +1030,7 @@ class SchemaForge {
       }
       
       if (hasSearchIcon || hasSvgSearchIcon) {
-        console.log('ContextOS: Found search button via icon:', button);
+                  console.log('Contextable: Found search button via icon:', button);
         return button;
       }
     }
@@ -1047,18 +1047,18 @@ class SchemaForge {
       if (button) {
         const rect = button.getBoundingClientRect();
         if (rect.width > 0 && rect.height > 0) {
-          console.log('ContextOS: Found search button globally:', button);
+          console.log('Contextable: Found search button globally:', button);
           return button;
         }
       }
     }
     
-    console.log('ContextOS: No search button found');
+          console.log('Contextable: No search button found');
     return null;
   }
 
   findButtonContainer() {
-    console.log('ContextOS: Searching for button container...');
+          console.log('Contextable: Searching for button container...');
     
     // Strategy 1: Find send button and get its immediate container
     const sendButtonSelectors = [
@@ -1072,8 +1072,8 @@ class SchemaForge {
       if (sendButton) {
         const rect = sendButton.getBoundingClientRect();
         if (rect.width > 0 && rect.height > 0) {
-          console.log('ContextOS: Found send button:', sendButton);
-          console.log('ContextOS: Send button parent:', sendButton.parentElement);
+                  console.log('Contextable: Found send button:', sendButton);
+        console.log('Contextable: Send button parent:', sendButton.parentElement);
           return sendButton.parentElement;
         }
       }
@@ -1087,7 +1087,7 @@ class SchemaForge {
         // Look for buttons near this textarea
         const nearbyButtons = this.findButtonsNearElement(textarea);
         if (nearbyButtons.length > 0) {
-          console.log('ContextOS: Found buttons near textarea:', nearbyButtons);
+          console.log('Contextable: Found buttons near textarea:', nearbyButtons);
           return nearbyButtons[0].parentElement;
         }
       }
@@ -1110,7 +1110,7 @@ class SchemaForge {
         });
         
         const bottomButton = sortedButtons[0];
-        console.log('ContextOS: Found bottom button in form:', bottomButton);
+                  console.log('Contextable: Found bottom button in form:', bottomButton);
         return bottomButton.parentElement;
       }
     }
@@ -1125,12 +1125,12 @@ class SchemaForge {
       if (rect.width > 20 && rect.height > 20 && 
           (text.includes('send') || ariaLabel.includes('send') || 
            button.type === 'submit')) {
-        console.log('ContextOS: Found potential send button:', button);
+                  console.log('Contextable: Found potential send button:', button);
         return button.parentElement;
       }
     }
     
-    console.log('ContextOS: No button container found');
+          console.log('Contextable: No button container found');
     return null;
   }
 
@@ -1202,7 +1202,7 @@ class SchemaForge {
     }
 
     const computedStyle = window.getComputedStyle(nativeButton);
-    console.log('ContextOS: Native button computed style:', {
+          console.log('Contextable: Native button computed style:', {
       fontFamily: computedStyle.fontFamily,
       fontSize: computedStyle.fontSize,
       fontWeight: computedStyle.fontWeight,
@@ -1267,13 +1267,13 @@ class SchemaForge {
         const rect = element.getBoundingClientRect();
         // Check if element is visible and substantial
         if (rect.width > 100 && rect.height > 20 && element.offsetParent) {
-          console.log('ContextOS: Found input element:', selector);
+          console.log('Contextable: Found input element:', selector);
           return element;
         }
       }
     }
     
-    console.log('ContextOS: No input found');
+          console.log('Contextable: No input found');
     return null;
   }
 
@@ -1306,10 +1306,10 @@ class SchemaForge {
   }
 
   enhancePrompt() {
-    console.log('ContextOS: Enhance button clicked');
+          console.log('Contextable: Enhance button clicked');
     
     if (!this.isActive) {
-              this.showMessage('Please turn ON ContextOS first!', 'error');
+              this.showMessage('Please turn ON Contextable first!', 'error');
       return;
     }
     
@@ -1325,7 +1325,7 @@ class SchemaForge {
     }
     
     const originalText = this.getText(input);
-    console.log('ContextOS: Original text:', originalText);
+          console.log('Contextable: Original text:', originalText);
     
     if (!originalText || !originalText.trim()) {
       this.showMessage('Please type a prompt first!', 'error');
@@ -1346,7 +1346,7 @@ class SchemaForge {
   buildEnhancedPrompt(originalPrompt) {
     const schema = this.activeSchema;
     
-    return `BUSINESS CONTEXT (Enhanced by ContextOS):
+          return `BUSINESS CONTEXT (Enhanced by Contextable):
 
 Company: ${schema.company.name} - ${schema.company.industry}
 Brand Tone: ${schema.company.tone}
@@ -1435,16 +1435,16 @@ Please respond according to the business context above, ensuring the output matc
       const button = document.getElementById('sf-settings-btn');
       
       if (!button) {
-        console.log(`ContextOS: Settings button not found after creation attempt ${attempts + 1}`);
+        console.log(`Contextable: Settings button not found after creation attempt ${attempts + 1}`);
         if (attempts < maxAttempts) {
-          console.log(`ContextOS: Retrying settings button creation in ${delay}ms...`);
+          console.log(`Contextable: Retrying settings button creation in ${delay}ms...`);
           setTimeout(() => this.createSettingsButtonWithRetry(attempts + 1), delay);
         }
       } else {
-        console.log('ContextOS: Settings button created successfully');
+        console.log('Contextable: Settings button created successfully');
       }
     } catch (error) {
-      console.log('ContextOS: Error creating settings button:', error);
+              console.log('Contextable: Error creating settings button:', error);
       if (attempts < maxAttempts) {
         setTimeout(() => this.createSettingsButtonWithRetry(attempts + 1), delay);
       }
@@ -1452,12 +1452,12 @@ Please respond according to the business context above, ensuring the output matc
   }
 
   createSettingsButton() {
-    console.log('ContextOS: createSettingsButton called');
+          console.log('Contextable: createSettingsButton called');
     
     // Remove existing
     const existing = document.getElementById('sf-settings-btn');
     if (existing) {
-      console.log('ContextOS: Removing existing settings button');
+              console.log('Contextable: Removing existing settings button');
       existing.remove();
     }
 
@@ -1475,7 +1475,7 @@ Please respond according to the business context above, ensuring the output matc
     
     button.onclick = () => this.toggleDialog();
     
-    console.log('ContextOS: Settings button created and appended. Element:', button);
+          console.log('Contextable: Settings button created and appended. Element:', button);
   }
 
   positionSettingsButton(button, baseButtonStyle) {
@@ -1529,7 +1529,7 @@ Please respond according to the business context above, ensuring the output matc
   }
 
   toggleDialog() {
-    console.log('ContextOS: Settings button clicked, toggling dialog visibility');
+          console.log('Contextable: Settings button clicked, toggling dialog visibility');
     this.dialogVisible = !this.dialogVisible;
     
     // Update the widget
@@ -1550,7 +1550,7 @@ Please respond according to the business context above, ensuring the output matc
       }, 200);
     }
     
-    console.log('ContextOS: Dialog visibility toggled to:', this.dialogVisible);
+          console.log('Contextable: Dialog visibility toggled to:', this.dialogVisible);
   }
 }
 
@@ -1581,8 +1581,8 @@ if (document.readyState === 'loading') {
 }
 
 // Debug function
-window.debugContextOS = function() {
-  console.log('=== ContextOS Debug ===');
+  window.debugContextable = function() {
+    console.log('=== Contextable Debug ===');
   const sf = window.schemaForge;
   if (sf) {
     console.log('Extension loaded:', true);
