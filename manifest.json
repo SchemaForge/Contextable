@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "ContextOS - AI Context Enhancement",
+  "version": "1.0.0",
+  "description": "Enhance ChatGPT with business context from your schemas",
+  
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  
+  "host_permissions": [
+    "https://chat.openai.com/*",
+    "https://chatgpt.com/*",
+    "https://uycbruvaxgawpmdddqry.supabase.co/*"
+  ],
+  
+  "content_scripts": [{
+    "matches": [
+      "https://chat.openai.com/*",
+      "https://chatgpt.com/*"
+    ],
+    "js": ["content.js"],
+    "css": ["styles.css"],
+    "run_at": "document_end"
+  }],
+  
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "ContextOS"
+  },
+  
+  "web_accessible_resources": [{
+    "resources": [],
+    "matches": ["https://chat.openai.com/*", "https://chatgpt.com/*"]
+  }]
+}

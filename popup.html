@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 350px;
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+    }
+    .header {
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .header p {
+      margin: 4px 0 0 0;
+      opacity: 0.9;
+      font-size: 12px;
+    }
+    .nav-tabs {
+      display: flex;
+      background: #f9fafb;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .nav-tab {
+      flex: 1;
+      padding: 12px;
+      text-align: center;
+      cursor: pointer;
+      font-weight: 500;
+      color: #6b7280;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .nav-tab:hover {
+      color: #3b82f6;
+    }
+    .nav-tab.active {
+      color: #3b82f6;
+      border-bottom-color: #3b82f6;
+      background: white;
+    }
+    .content {
+      padding: 20px;
+    }
+    .page {
+      display: none;
+    }
+    .page.active {
+      display: block;
+    }
+    .schema-section {
+      margin-bottom: 20px;
+    }
+    .schema-section label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #374151;
+    }
+    .schema-select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      background: white;
+      font-size: 14px;
+    }
+    .schema-preview {
+      background: #f9fafb;
+      padding: 12px;
+      border-radius: 6px;
+      margin-top: 12px;
+      font-size: 12px;
+    }
+    .schema-preview h4 {
+      margin: 0 0 8px 0;
+      color: #1f2937;
+    }
+    .schema-preview .detail {
+      color: #6b7280;
+      margin-bottom: 4px;
+    }
+    .toggle-section {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      background: #f9fafb;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .toggle-button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .toggle-button.active {
+      background: #10b981;
+    }
+    .toggle-button.inactive {
+      background: #6b7280;
+    }
+    .api-key-section {
+      background: #f5f5f5;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .api-key-section h3 {
+      margin: 0 0 12px 0;
+      font-size: 16px;
+      color: #374151;
+    }
+    .status {
+      font-size: 12px;
+      color: #6b7280;
+      text-align: center;
+      padding: 10px;
+      border-top: 1px solid #e5e7eb;
+    }
+    .status.active {
+      color: #10b981;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Schemas</h1>
+    <p>AI Context Enhancement</p>
+  </div>
+  
+  <div class="nav-tabs">
+    <div class="nav-tab active" data-page="schemas">Schemas</div>
+    <div class="nav-tab" data-page="user">User</div>
+  </div>
+  
+  <div class="content">
+    <!-- Schemas Page -->
+    <div id="schemas-page" class="page active">
+      <div class="toggle-section">
+        <span>Schema Enhancement</span>
+        <button id="toggle-btn" class="toggle-button inactive">OFF</button>
+      </div>
+      
+      <div class="schema-section">
+        <label for="schema-select">Select Schema:</label>
+        <select id="schema-select" class="schema-select">
+          <option value="">Loading schemas...</option>
+        </select>
+        
+        <div id="schema-preview" class="schema-preview" style="display: none;">
+          <!-- Schema details will be inserted here -->
+        </div>
+      </div>
+    </div>
+    
+    <!-- User Page -->
+    <div id="user-page" class="page">
+      <div class="api-key-section">
+        <h3>Settings</h3>
+        <div style="background: #f9fafb; padding: 12px; border-radius: 6px; font-size: 12px; color: #6b7280;">
+          <div style="margin-bottom: 8px;"><strong>Privacy Notice:</strong></div>
+          <div>API keys and sensitive data are handled securely and not stored in the browser interface for your protection.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="status" class="status">
+    Ready to enhance your ChatGPT prompts
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
