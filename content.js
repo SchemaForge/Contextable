@@ -436,7 +436,6 @@ class SchemaForge {
                 <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">API Key:</label>
                 <input type="password" id="sf-api-key-input" placeholder="Enter your API key..." value="${this.apiKey || ''}" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
                 <div style="margin-top: 8px;">
-                  <button id="sf-save-api-key" style="background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; margin-right: 8px;">Save API Key</button>
                   <button id="sf-test-api-key" style="background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500;">Test Connection</button>
                 </div>
                 <div id="sf-api-status" style="margin-top: 8px; font-size: 12px; display: none;"></div>
@@ -553,20 +552,8 @@ class SchemaForge {
     }
 
     // API Key management
-    const saveApiKeyBtn = widget.querySelector('#sf-save-api-key');
     const testApiKeyBtn = widget.querySelector('#sf-test-api-key');
     const apiKeyInput = widget.querySelector('#sf-api-key-input');
-
-    if (saveApiKeyBtn) {
-      saveApiKeyBtn.addEventListener('click', () => {
-        const apiKey = apiKeyInput.value.trim();
-        if (apiKey) {
-          this.saveApiKey(apiKey);
-        } else {
-          this.showWidgetApiStatus('Please enter an API key', 'error');
-        }
-      });
-    }
 
     if (testApiKeyBtn) {
       testApiKeyBtn.addEventListener('click', () => {
@@ -604,8 +591,8 @@ class SchemaForge {
         await this.loadSchemasFromAPI();
         this.updateWidget();
         
-        // Switch to schemas page after successful setup
-        this.switchWidgetPage('schemas');
+        // Do not automatically switch to schemas page - user must manually select Schema tab
+        console.log('ContextOS: API key saved and schemas loaded successfully');
       } catch (error) {
         console.error('ContextOS: Failed to load schemas after saving API key:', error);
         this.showWidgetApiStatus('API key saved but failed to load schemas: ' + error.message, 'error');
@@ -623,8 +610,21 @@ class SchemaForge {
     const apiKeyInput = widget.querySelector('#sf-api-key-input');
     const testApiKey = apiKeyInput.value.trim();
     
+    // Error checks
     if (!testApiKey) {
       this.showWidgetApiStatus('Please enter an API key', 'error');
+      return;
+    }
+    
+    // Basic format validation for API key
+    if (testApiKey.length < 10) {
+      this.showWidgetApiStatus('API key appears to be too short', 'error');
+      return;
+    }
+    
+    // Check for common invalid characters or patterns
+    if (testApiKey.includes(' ')) {
+      this.showWidgetApiStatus('API key should not contain spaces', 'error');
       return;
     }
     
@@ -634,13 +634,32 @@ class SchemaForge {
       await this.loadSchemasFromAPI(testApiKey);
       
       const schemaCount = this.schemas.length;
-      this.showWidgetApiStatus(`Connection successful! Found ${schemaCount} schemas`, 'success');
+      this.showWidgetApiStatus('Connection successful', 'success');
       
       // Auto-save the API key if test is successful
-      await this.saveApiKey(testApiKey);
+      await chrome.storage.local.set({ apiKey: testApiKey });
+      this.apiKey = testApiKey;
+      
+      // Update the widget to reflect the saved API key and loaded schemas
+      this.updateWidget();
+      
+      console.log(`ContextOS: API key saved and ${schemaCount} schemas loaded`);
     } catch (error) {
       console.error('ContextOS: Failed to test API key:', error);
-      this.showWidgetApiStatus('Connection failed: ' + error.message, 'error');
+      
+      // Enhanced error messaging based on error type
+      let errorMessage = 'Connection failed: ';
+      if (error.message.includes('Invalid API key')) {
+        errorMessage += 'Invalid API key - please check your credentials';
+      } else if (error.message.includes('Server error')) {
+        errorMessage += 'Server error - please try again later';
+      } else if (error.message.includes('Network')) {
+        errorMessage += 'Network error - please check your internet connection';
+      } else {
+        errorMessage += error.message;
+      }
+      
+      this.showWidgetApiStatus(errorMessage, 'error');
     }
   }
 
