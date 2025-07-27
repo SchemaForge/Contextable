@@ -46,6 +46,9 @@ class SchemaForge {
         const result = await this.loadSchemasFromAPI();
         if (result.success) {
           console.log(`ContextOS: Successfully loaded ${result.schemaCount} schemas and ready for use`);
+          // Show the Schemas tab since we have a valid API and loaded schemas
+          this.currentWidgetPage = 'schemas';
+          this.updateWidget();
           // Show a brief success message
           setTimeout(() => {
             this.showMessage(`ContextOS ready! ${result.schemaCount} schema${result.schemaCount !== 1 ? 's' : ''} loaded.`, 'success');
@@ -53,6 +56,8 @@ class SchemaForge {
         }
       } catch (error) {
         console.error('ContextOS: Failed to load schemas during initialization:', error);
+        this.isLoadingSchemas = false;
+        this.updateWidget();
       }
     } else {
       console.log('ContextOS: No API key found, please configure in settings');
@@ -455,14 +460,14 @@ class SchemaForge {
                   ${this.apiKey && this.schemas.length > 0 ? '<div style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: #10b981; font-weight: bold;">✓</div>' : ''}
                 </div>
                 <div style="margin-top: 8px;">
-                  <button id="sf-test-api-key" style="background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; opacity: ${this.apiKey && this.schemas.length > 0 ? '0.7' : '1'};">
+                  <button id="sf-test-api-key" style="background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; opacity: ${this.getTestButtonDisabled() ? '0.7' : '1'};" ${this.getTestButtonDisabled() ? 'disabled' : ''}>
                     ${this.apiKey && this.schemas.length > 0 ? 'Retest Connection' : 'Test Connection'}
                   </button>
-                  ${this.apiKey && this.schemas.length > 0 ? 
-                    `<span style="margin-left: 8px; color: #10b981; font-size: 12px; font-weight: 500;">✅ ${this.schemas.length} schema${this.schemas.length !== 1 ? 's' : ''} loaded</span>` : 
-                    ''
-                  }
                 </div>
+                ${this.apiKey && this.schemas.length > 0 ? 
+                  `<div style="margin-top: 8px; color: #10b981; font-size: 12px; font-weight: 500;">✅ ${this.schemas.length} schema${this.schemas.length !== 1 ? 's' : ''} loaded</div>` : 
+                  ''
+                }
                 <div id="sf-api-status" style="margin-top: 8px; font-size: 12px; display: none;"></div>
               </div>
               <div style="background: #f9fafb; padding: 12px; border-radius: 6px; font-size: 12px; color: #6b7280;">
@@ -492,6 +497,11 @@ class SchemaForge {
     
     // Add event listeners
     this.setupWidgetEventListeners(widget);
+    
+    // Update test button state after widget is created
+    setTimeout(() => {
+      this.updateTestButtonState();
+    }, 0);
   }
 
   getStatusText() {
@@ -515,6 +525,43 @@ class SchemaForge {
       return '#10b981';
     }
     return '#6b7280';
+  }
+
+  getTestButtonDisabled() {
+    // Button is disabled only when we have a stored API key, schemas are loaded, 
+    // and the current input value matches the stored API key
+    const widget = document.getElementById('sf-widget');
+    if (!widget) return false;
+    
+    const apiKeyInput = widget.querySelector('#sf-api-key-input');
+    if (!apiKeyInput) return false;
+    
+    const currentInputValue = apiKeyInput.value.trim();
+    
+    // Enable if input is different from stored API key (new key entered)
+    if (this.apiKey && currentInputValue !== this.apiKey) {
+      return false;
+    }
+    
+    // Disable if we have stored API key and schemas are loaded and input matches stored key
+    return this.apiKey && this.schemas.length > 0 && currentInputValue === this.apiKey;
+  }
+
+  updateTestButtonState() {
+    const widget = document.getElementById('sf-widget');
+    if (!widget) return;
+    
+    const testButton = widget.querySelector('#sf-test-api-key');
+    if (!testButton) return;
+    
+    const isDisabled = this.getTestButtonDisabled();
+    testButton.disabled = isDisabled;
+    testButton.style.opacity = isDisabled ? '0.7' : '1';
+    testButton.style.cursor = isDisabled ? 'not-allowed' : 'pointer';
+    
+    // Update button text based on current state
+    const hasApiKeyAndSchemas = this.apiKey && this.schemas.length > 0;
+    testButton.textContent = hasApiKeyAndSchemas ? 'Retest Connection' : 'Test Connection';
   }
 
   setupWidgetEventListeners(widget) {
@@ -593,6 +640,11 @@ class SchemaForge {
         if (e.key === 'Enter') {
           this.testApiKey();
         }
+      });
+      
+      // Listen for input changes to enable/disable the test button
+      apiKeyInput.addEventListener('input', () => {
+        this.updateTestButtonState();
       });
     }
   }
