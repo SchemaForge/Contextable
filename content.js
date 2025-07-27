@@ -41,11 +41,27 @@ class SchemaForge {
     
     // Load schemas from API only if we have an API key
     if (this.apiKey) {
-      await this.loadSchemasFromAPI();
+      console.log('ContextOS: API key found, loading schemas...');
+      try {
+        const result = await this.loadSchemasFromAPI();
+        if (result.success) {
+          console.log(`ContextOS: Successfully loaded ${result.schemaCount} schemas and ready for use`);
+          // Show a brief success message
+          setTimeout(() => {
+            this.showMessage(`ContextOS ready! ${result.schemaCount} schema${result.schemaCount !== 1 ? 's' : ''} loaded.`, 'success');
+          }, 1000);
+        }
+      } catch (error) {
+        console.error('ContextOS: Failed to load schemas during initialization:', error);
+      }
     } else {
-      console.log('ContextOS: No API key found, skipping schema loading');
+      console.log('ContextOS: No API key found, please configure in settings');
       this.isLoadingSchemas = false;
       this.updateWidget();
+      // Show a message to guide user to configure API key
+      setTimeout(() => {
+        this.showMessage('Please configure your API key in the settings (⚙️ button)', 'info');
+      }, 2000);
     }
     
     // Set up mutation observer to recreate button when DOM changes
@@ -434,9 +450,18 @@ class SchemaForge {
               <h3 style="margin: 0 0 12px 0; font-size: 16px; color: #374151;">API Configuration</h3>
               <div style="margin-bottom: 16px;">
                 <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">API Key:</label>
-                <input type="password" id="sf-api-key-input" placeholder="Enter your API key..." value="${this.apiKey || ''}" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
+                <div style="position: relative;">
+                  <input type="password" id="sf-api-key-input" placeholder="Enter your API key..." value="${this.apiKey || ''}" style="width: 100%; padding: 8px; border: 1px solid ${this.apiKey && this.schemas.length > 0 ? '#10b981' : '#d1d5db'}; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
+                  ${this.apiKey && this.schemas.length > 0 ? '<div style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: #10b981; font-weight: bold;">✓</div>' : ''}
+                </div>
                 <div style="margin-top: 8px;">
-                  <button id="sf-test-api-key" style="background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500;">Test Connection</button>
+                  <button id="sf-test-api-key" style="background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; opacity: ${this.apiKey && this.schemas.length > 0 ? '0.7' : '1'};">
+                    ${this.apiKey && this.schemas.length > 0 ? 'Retest Connection' : 'Test Connection'}
+                  </button>
+                  ${this.apiKey && this.schemas.length > 0 ? 
+                    `<span style="margin-left: 8px; color: #10b981; font-size: 12px; font-weight: 500;">✅ ${this.schemas.length} schema${this.schemas.length !== 1 ? 's' : ''} loaded</span>` : 
+                    ''
+                  }
                 </div>
                 <div id="sf-api-status" style="margin-top: 8px; font-size: 12px; display: none;"></div>
               </div>
@@ -471,15 +496,17 @@ class SchemaForge {
 
   getStatusText() {
     if (!this.apiKey) {
-      return 'Please configure your API key in the User tab';
+      return '⚠️ Please configure your API key in the User tab';
+    } else if (this.isLoadingSchemas) {
+      return '⏳ Loading schemas from API...';
     } else if (this.schemas.length === 0) {
-      return 'No schemas available - check your API key';
+      return '❌ No schemas available - check your API key';
     } else if (this.isActive && this.activeSchema) {
-      return `Active: ${this.activeSchema.name} schema will enhance prompts`;
-    } else if (this.isActive) {
-      return 'Active but no schema selected';
+      return `✅ Active: "${this.activeSchema.name}" schema ready to enhance prompts`;
+    } else if (this.isActive && this.schemas.length > 0) {
+      return `⚡ Ready: ${this.schemas.length} schema${this.schemas.length !== 1 ? 's' : ''} available - select one above`;
     } else {
-      return 'Inactive - prompts will not be enhanced';
+      return `💤 Inactive: ${this.schemas.length} schema${this.schemas.length !== 1 ? 's' : ''} loaded but enhancement is OFF`;
     }
   }
 
@@ -581,25 +608,35 @@ class SchemaForge {
       await chrome.storage.local.set({ apiKey: apiKey });
       this.apiKey = apiKey;
       
-      this.showWidgetApiStatus('API key saved successfully', 'success');
+      console.log('ContextOS: API key saved successfully to storage');
       
       // Load schemas after saving API key
       this.isLoadingSchemas = true;
       this.updateWidget();
       
       try {
-        await this.loadSchemasFromAPI();
-        this.updateWidget();
+        const result = await this.loadSchemasFromAPI();
         
-        // Do not automatically switch to schemas page - user must manually select Schema tab
-        console.log('ContextOS: API key saved and schemas loaded successfully');
+        if (result.success) {
+          this.updateWidget();
+          
+          // Create/update enhance button now that we have valid API and schemas
+          this.createEnhanceButtonWithRetry();
+          
+          console.log(`ContextOS: API key saved and ${result.schemaCount} schemas loaded successfully`);
+          return { success: true, schemaCount: result.schemaCount };
+        } else {
+          throw new Error(result.error || 'Failed to load schemas');
+        }
       } catch (error) {
         console.error('ContextOS: Failed to load schemas after saving API key:', error);
         this.showWidgetApiStatus('API key saved but failed to load schemas: ' + error.message, 'error');
+        throw error;
       }
     } catch (error) {
       console.error('ContextOS: Failed to save API key:', error);
       this.showWidgetApiStatus('Failed to save API key', 'error');
+      throw error;
     }
   }
 
@@ -631,19 +668,25 @@ class SchemaForge {
     this.showWidgetApiStatus('Testing API connection...', 'loading');
     
     try {
-      await this.loadSchemasFromAPI(testApiKey);
+      const result = await this.loadSchemasFromAPI(testApiKey);
       
-      const schemaCount = this.schemas.length;
-      this.showWidgetApiStatus('Connection successful', 'success');
-      
-      // Auto-save the API key if test is successful
-      await chrome.storage.local.set({ apiKey: testApiKey });
-      this.apiKey = testApiKey;
-      
-      // Update the widget to reflect the saved API key and loaded schemas
-      this.updateWidget();
-      
-      console.log(`ContextOS: API key saved and ${schemaCount} schemas loaded`);
+      if (result.success) {
+        const schemaCount = result.schemaCount;
+        this.showWidgetApiStatus(`✅ Connection successful! Found ${schemaCount} schema${schemaCount !== 1 ? 's' : ''} ready for use.`, 'success');
+        
+        // Auto-save the API key if test is successful
+        await this.saveApiKey(testApiKey);
+        
+        // Automatically switch to schemas tab to show loaded schemas
+        setTimeout(() => {
+          this.switchWidgetPage('schemas');
+          this.showWidgetApiStatus(`🎉 Schemas are now ready! Switch to the Schemas tab to select one.`, 'success');
+        }, 2000);
+        
+        console.log(`ContextOS: API key validated and ${schemaCount} schemas loaded successfully`);
+      } else {
+        throw new Error(result.error || 'Unknown error occurred');
+      }
     } catch (error) {
       console.error('ContextOS: Failed to test API key:', error);
       
@@ -1282,12 +1325,29 @@ Please respond according to the business context above, ensuring the output matc
     const message = document.createElement('div');
     message.id = 'sf-message-' + Date.now();
     message.textContent = text;
+    
+    // Determine background color based on type
+    let backgroundColor;
+    switch (type) {
+      case 'error':
+        backgroundColor = '#ef4444';
+        break;
+      case 'success':
+        backgroundColor = '#10b981';
+        break;
+      case 'info':
+        backgroundColor = '#3b82f6';
+        break;
+      default:
+        backgroundColor = '#6b7280';
+    }
+    
     message.style.cssText = `
       position: fixed;
       top: 20px;
       left: 50%;
       transform: translateX(-50%);
-      background: ${type === 'error' ? '#ef4444' : '#10b981'};
+      background: ${backgroundColor};
       color: white;
       padding: 12px 20px;
       border-radius: 8px;
@@ -1295,15 +1355,22 @@ Please respond according to the business context above, ensuring the output matc
       font-family: system-ui;
       font-weight: 500;
       box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      max-width: 400px;
+      text-align: center;
+      line-height: 1.4;
     `;
     
     document.body.appendChild(message);
     
+    // Auto-remove after appropriate duration based on message type
+    const duration = type === 'info' ? 4000 : 3000;
     setTimeout(() => {
       if (message.parentNode) {
-        message.remove();
+        message.style.opacity = '0';
+        message.style.transform = 'translateX(-50%) translateY(-10px)';
+        setTimeout(() => message.remove(), 300);
       }
-    }, 3000);
+    }, duration);
   }
 
   // Settings button functions
