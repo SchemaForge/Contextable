@@ -12,6 +12,7 @@ class SchemaForge {
     this.hasInjectedSchema = false; // Track if schema has been successfully injected
     this.userSelectedSchema = false; // Track if user has manually selected a schema
     this.dialogVisible = true; // Track dialog visibility state (default to visible)
+    this.currentWidgetPage = null; // Track current widget page (schemas/user)
     // API key will be loaded from Chrome storage
     this.apiKey = null;
     this.apiUrl = 'https://uycbruvaxgawpmdddqry.supabase.co/functions/v1/user-schemas-api';
@@ -373,50 +374,84 @@ class SchemaForge {
       return;
     }
 
+    // Initialize current page if not set
+    if (!this.currentWidgetPage) {
+      this.currentWidgetPage = this.apiKey ? 'schemas' : 'user';
+    }
+
     const widget = document.createElement('div');
     widget.id = 'sf-widget';
     widget.innerHTML = `
-      <div style="padding: 16px; background: white; border: 2px solid #3b82f6; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); font-family: system-ui;">
-        <div style="display: flex; align-items: center; margin-bottom: 12px;">
-          <div style="width: 8px; height: 8px; background: #3b82f6; border-radius: 50%; margin-right: 8px;"></div>
-          <strong>ContextOS</strong>
-          <span style="margin-left: 8px; font-size: 11px; color: #666;">(${this.isLoadingSchemas ? 'loading...' : this.schemas.length + ' schemas'})</span>
-          <button id="sf-toggle" style="margin-left: auto; padding: 4px 8px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; background: ${this.isActive ? '#10b981' : '#6b7280'}; color: white;">
-            ${this.isActive ? 'ON' : 'OFF'}
-          </button>
+      <div style="background: white; border: 2px solid #3b82f6; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; width: 100%;">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
+          <h1 style="margin: 0; font-size: 18px; font-weight: 600;">ContextOS</h1>
+          <p style="margin: 4px 0 0 0; opacity: 0.9; font-size: 12px;">AI Context Enhancement</p>
         </div>
         
-        <select id="sf-schema-select" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 12px;" ${this.isLoadingSchemas ? 'disabled' : ''}>
-          ${this.isLoadingSchemas ? 
-            '<option>Loading schemas...</option>' : 
-            this.schemas.length > 0 ? 
-            this.schemas.map(s => `<option value="${s.id}" ${this.activeSchema && s.id === this.activeSchema.id ? 'selected' : ''}>${s.name}</option>`).join('') :
-            '<option>No schemas available</option>'
-          }
-        </select>
-        
-        ${this.isLoadingSchemas ? 
-          `<div style="background: #f9fafb; padding: 10px; border-radius: 6px; font-size: 12px; text-align: center;">
-            <div style="color: #666;">Loading schemas...</div>
-          </div>` : 
-          this.activeSchema ? 
-          `<div style="background: #f9fafb; padding: 10px; border-radius: 6px; font-size: 12px;">
-            <div><strong>${this.activeSchema.company.name}</strong> - ${this.activeSchema.company.industry}</div>
-            <div style="color: #666; margin-top: 4px;">Tone: ${this.activeSchema.company.tone}</div>
-            <div style="color: #666;">Target: ${this.activeSchema.personas[0].name}</div>
-          </div>` :
-          `<div style="background: #f9fafb; padding: 10px; border-radius: 6px; font-size: 12px;">
-            <div style="color: #666;">No schemas available</div>
-          </div>`
-        }
-        
-        <div style="margin-top: 12px; font-size: 11px; color: #666; padding: 8px; background: #f0f0f0; border-radius: 4px;">
-          <div style="margin-bottom: 4px;"><strong>API Status:</strong></div>
-          <div style="color: #10b981;">✅ Connected securely</div>
+        <!-- Navigation Tabs -->
+        <div style="display: flex; background: #f9fafb; border-bottom: 1px solid #e5e7eb;">
+          <div class="sf-nav-tab ${this.currentWidgetPage === 'schemas' ? 'active' : ''}" data-page="schemas" style="flex: 1; padding: 12px; text-align: center; cursor: pointer; font-weight: 500; color: ${this.currentWidgetPage === 'schemas' ? '#3b82f6' : '#6b7280'}; border-bottom: 2px solid ${this.currentWidgetPage === 'schemas' ? '#3b82f6' : 'transparent'}; background: ${this.currentWidgetPage === 'schemas' ? 'white' : 'transparent'}; transition: all 0.2s;">Schemas</div>
+          <div class="sf-nav-tab ${this.currentWidgetPage === 'user' ? 'active' : ''}" data-page="user" style="flex: 1; padding: 12px; text-align: center; cursor: pointer; font-weight: 500; color: ${this.currentWidgetPage === 'user' ? '#3b82f6' : '#6b7280'}; border-bottom: 2px solid ${this.currentWidgetPage === 'user' ? '#3b82f6' : 'transparent'}; background: ${this.currentWidgetPage === 'user' ? 'white' : 'transparent'}; transition: all 0.2s;">User</div>
         </div>
         
-        <div style="margin-top: 12px; font-size: 12px; color: #666;">
-          ${this.isActive ? '✅ Active - prompts will be enhanced' : '⭕ Inactive'}
+        <!-- Content -->
+        <div style="padding: 20px;">
+          <!-- Schemas Page -->
+          <div id="sf-schemas-page" class="sf-page" style="display: ${this.currentWidgetPage === 'schemas' ? 'block' : 'none'};">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f9fafb; border-radius: 8px; margin-bottom: 20px;">
+              <span>Schema Enhancement</span>
+              <button id="sf-toggle" style="background: ${this.isActive ? '#10b981' : '#6b7280'}; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500;">${this.isActive ? 'ON' : 'OFF'}</button>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+              <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Select Schema:</label>
+              <select id="sf-schema-select" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; background: white; font-size: 14px;" ${this.isLoadingSchemas || !this.apiKey ? 'disabled' : ''}>
+                ${!this.apiKey ? 
+                  '<option value="">Please configure API key first</option>' :
+                  this.isLoadingSchemas ? 
+                  '<option value="">Loading schemas...</option>' : 
+                  this.schemas.length > 0 ? 
+                  '<option value="">No Schema</option>' + this.schemas.map(s => `<option value="${s.id}" ${this.activeSchema && s.id === this.activeSchema.id ? 'selected' : ''}>${s.name}</option>`).join('') :
+                  '<option value="">No schemas available</option>'
+                }
+              </select>
+              
+              <div id="sf-schema-preview" style="background: #f9fafb; padding: 12px; border-radius: 6px; margin-top: 12px; font-size: 12px; display: ${this.activeSchema ? 'block' : 'none'};">
+                ${this.activeSchema ? `
+                  <h4 style="margin: 0 0 8px 0; color: #1f2937;">${this.activeSchema.company.name}</h4>
+                  <div style="color: #6b7280; margin-bottom: 4px;">Industry: ${this.activeSchema.company.industry}</div>
+                  <div style="color: #6b7280; margin-bottom: 4px;">Tone: ${this.activeSchema.company.tone}</div>
+                  <div style="color: #6b7280;">Target: ${this.activeSchema.personas[0].name}</div>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+          
+          <!-- User Page -->
+          <div id="sf-user-page" class="sf-page" style="display: ${this.currentWidgetPage === 'user' ? 'block' : 'none'};">
+            <div style="background: #f5f5f5; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+              <h3 style="margin: 0 0 12px 0; font-size: 16px; color: #374151;">API Configuration</h3>
+              <div style="margin-bottom: 16px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">API Key:</label>
+                <input type="password" id="sf-api-key-input" placeholder="Enter your API key..." value="${this.apiKey || ''}" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
+                <div style="margin-top: 8px;">
+                  <button id="sf-save-api-key" style="background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; margin-right: 8px;">Save API Key</button>
+                  <button id="sf-test-api-key" style="background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500;">Test Connection</button>
+                </div>
+                <div id="sf-api-status" style="margin-top: 8px; font-size: 12px; display: none;"></div>
+              </div>
+              <div style="background: #f9fafb; padding: 12px; border-radius: 6px; font-size: 12px; color: #6b7280;">
+                <div style="margin-bottom: 8px;"><strong>Privacy Notice:</strong></div>
+                <div>API keys are stored securely in your browser's local storage and are never transmitted to third parties except for authenticated API requests.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Status -->
+        <div id="sf-status" style="font-size: 12px; color: ${this.getStatusColor()}; text-align: center; padding: 10px; border-top: 1px solid #e5e7eb;">
+          ${this.getStatusText()}
         </div>
       </div>
     `;
@@ -425,25 +460,76 @@ class SchemaForge {
       position: fixed;
       top: 20px;
       right: 20px;
-      width: 320px;
+      width: 350px;
       z-index: 10000;
     `;
     
     document.body.appendChild(widget);
     
-    // Add listeners
-    widget.querySelector('#sf-toggle').onclick = () => {
-      this.isActive = !this.isActive;
-      this.updateWidget();
-    };
-    
+    // Add event listeners
+    this.setupWidgetEventListeners(widget);
+  }
+
+  getStatusText() {
+    if (!this.apiKey) {
+      return 'Please configure your API key in the User tab';
+    } else if (this.schemas.length === 0) {
+      return 'No schemas available - check your API key';
+    } else if (this.isActive && this.activeSchema) {
+      return `Active: ${this.activeSchema.name} schema will enhance prompts`;
+    } else if (this.isActive) {
+      return 'Active but no schema selected';
+    } else {
+      return 'Inactive - prompts will not be enhanced';
+    }
+  }
+
+  getStatusColor() {
+    if (this.isActive && this.activeSchema && this.apiKey) {
+      return '#10b981';
+    }
+    return '#6b7280';
+  }
+
+  setupWidgetEventListeners(widget) {
+    // Tab navigation
+    widget.querySelectorAll('.sf-nav-tab').forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        const page = e.target.getAttribute('data-page');
+        this.switchWidgetPage(page);
+      });
+      
+      // Hover effects
+      tab.addEventListener('mouseenter', () => {
+        if (!tab.classList.contains('active')) {
+          tab.style.color = '#3b82f6';
+        }
+      });
+      
+      tab.addEventListener('mouseleave', () => {
+        if (!tab.classList.contains('active')) {
+          tab.style.color = '#6b7280';
+        }
+      });
+    });
+
+    // Toggle button
+    const toggleBtn = widget.querySelector('#sf-toggle');
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => {
+        this.isActive = !this.isActive;
+        this.updateWidget();
+      });
+    }
+
+    // Schema selection
     const schemaSelect = widget.querySelector('#sf-schema-select');
     if (schemaSelect && !this.isLoadingSchemas) {
-      schemaSelect.onchange = (e) => {
+      schemaSelect.addEventListener('change', (e) => {
         const selectedSchema = this.schemas.find(s => s.id === e.target.value);
         if (selectedSchema) {
           this.activeSchema = selectedSchema;
-          this.userSelectedSchema = true; // Mark that user has selected a schema
+          this.userSelectedSchema = true;
           this.updateWidget();
           
           // Update button text immediately if button exists
@@ -451,17 +537,134 @@ class SchemaForge {
           if (existingButton) {
             existingButton.textContent = this.getButtonText();
           }
-          
-          // Reset injection state when new schema is selected
-          if (this.hasInjectedSchema) {
-            console.log('ContextOS: New schema selected, resetting injection state');
-            this.hasInjectedSchema = false;
-            
-            // Recreate button with new schema name
-            this.createEnhanceButtonWithRetry();
-          }
+        } else {
+          this.activeSchema = null;
+          this.updateWidget();
         }
-      };
+      });
+    }
+
+    // API Key management
+    const saveApiKeyBtn = widget.querySelector('#sf-save-api-key');
+    const testApiKeyBtn = widget.querySelector('#sf-test-api-key');
+    const apiKeyInput = widget.querySelector('#sf-api-key-input');
+
+    if (saveApiKeyBtn) {
+      saveApiKeyBtn.addEventListener('click', () => {
+        const apiKey = apiKeyInput.value.trim();
+        if (apiKey) {
+          this.saveApiKey(apiKey);
+        } else {
+          this.showWidgetApiStatus('Please enter an API key', 'error');
+        }
+      });
+    }
+
+    if (testApiKeyBtn) {
+      testApiKeyBtn.addEventListener('click', () => {
+        this.testApiKey();
+      });
+    }
+
+    if (apiKeyInput) {
+      apiKeyInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          this.testApiKey();
+        }
+      });
+    }
+  }
+
+  switchWidgetPage(page) {
+    console.log('ContextOS: Switching widget page to:', page);
+    this.currentWidgetPage = page;
+    this.updateWidget();
+  }
+
+  async saveApiKey(apiKey) {
+    try {
+      await chrome.storage.local.set({ apiKey: apiKey });
+      this.apiKey = apiKey;
+      
+      this.showWidgetApiStatus('API key saved successfully', 'success');
+      
+      // Load schemas after saving API key
+      this.isLoadingSchemas = true;
+      this.updateWidget();
+      
+      try {
+        await this.loadSchemasFromAPI();
+        this.updateWidget();
+        
+        // Switch to schemas page after successful setup
+        this.switchWidgetPage('schemas');
+      } catch (error) {
+        console.error('ContextOS: Failed to load schemas after saving API key:', error);
+        this.showWidgetApiStatus('API key saved but failed to load schemas: ' + error.message, 'error');
+      }
+    } catch (error) {
+      console.error('ContextOS: Failed to save API key:', error);
+      this.showWidgetApiStatus('Failed to save API key', 'error');
+    }
+  }
+
+  async testApiKey() {
+    const widget = document.getElementById('sf-widget');
+    if (!widget) return;
+    
+    const apiKeyInput = widget.querySelector('#sf-api-key-input');
+    const testApiKey = apiKeyInput.value.trim();
+    
+    if (!testApiKey) {
+      this.showWidgetApiStatus('Please enter an API key', 'error');
+      return;
+    }
+    
+    this.showWidgetApiStatus('Testing API connection...', 'loading');
+    
+    try {
+      await this.loadSchemasFromAPI(testApiKey);
+      
+      const schemaCount = this.schemas.length;
+      this.showWidgetApiStatus(`Connection successful! Found ${schemaCount} schemas`, 'success');
+      
+      // Auto-save the API key if test is successful
+      await this.saveApiKey(testApiKey);
+    } catch (error) {
+      console.error('ContextOS: Failed to test API key:', error);
+      this.showWidgetApiStatus('Connection failed: ' + error.message, 'error');
+    }
+  }
+
+  showWidgetApiStatus(message, type) {
+    const widget = document.getElementById('sf-widget');
+    if (!widget) return;
+    
+    const statusElement = widget.querySelector('#sf-api-status');
+    if (!statusElement) return;
+    
+    statusElement.style.display = 'block';
+    statusElement.textContent = message;
+    
+    switch (type) {
+      case 'success':
+        statusElement.style.color = '#10b981';
+        break;
+      case 'error':
+        statusElement.style.color = '#ef4444';
+        break;
+      case 'loading':
+        statusElement.style.color = '#3b82f6';
+        break;
+      default:
+        statusElement.style.color = '#6b7280';
+    }
+    
+    // Auto-hide success/error messages after 5 seconds
+    if (type === 'success' || type === 'error') {
+      setTimeout(() => {
+        statusElement.style.display = 'none';
+      }, 5000);
     }
     
     console.log('ContextOS: Widget created');
@@ -1210,65 +1413,10 @@ if (typeof chrome !== 'undefined' && chrome.runtime) {
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   const sf = window.schemaForge;
   
-  if (request.action === 'getSchemas') {
-    sendResponse({
-      schemas: sf ? sf.schemas : [],
-      activeSchema: sf ? sf.activeSchema : null,
-      isActive: sf ? sf.isActive : false
-    });
-  } else if (request.action === 'toggleActive') {
+  if (request.action === 'toggleWidget') {
     if (sf) {
-      sf.isActive = !sf.isActive;
-      sf.updateWidget();
-      if (sf.isActive && !sf.hasInjectedSchema) {
-        sf.createEnhanceButtonWithRetry();
-      } else if (!sf.isActive) {
-        const button = document.getElementById('sf-enhance-btn');
-        if (button) button.remove();
-      }
-      sendResponse({ isActive: sf.isActive });
-    }
-  } else if (request.action === 'setActiveSchema') {
-    if (sf) {
-      sf.activeSchema = sf.schemas.find(s => s.id === request.schemaId) || null;
-      sf.userSelectedSchema = true; // Mark that user has selected a schema
-      sf.updateWidget();
-      
-      // Update button text immediately if button exists
-      const existingButton = document.getElementById('sf-enhance-btn');
-      if (existingButton) {
-        existingButton.textContent = sf.getButtonText();
-      }
-      
-      // Reset injection state and recreate button when schema changes
-      if (sf.hasInjectedSchema) {
-        sf.hasInjectedSchema = false;
-        sf.createEnhanceButtonWithRetry();
-      }
-    }
-  } else if (request.action === 'recreateButton') {
-    if (sf && sf.isActive && !sf.hasInjectedSchema) {
-      sf.createEnhanceButtonWithRetry();
-    }
-  } else if (request.action === 'updateApiKey') {
-    if (sf) {
-      sf.apiKey = request.apiKey;
-      // Reload schemas with new API key
-      sf.loadSchemasFromAPI().then(() => {
-        sendResponse({ success: true });
-      }).catch(error => {
-        sendResponse({ success: false, error: error.message });
-      });
-      return true; // Keep message channel open for async response
-    }
-  } else if (request.action === 'testApiKey') {
-    if (sf) {
-      sf.loadSchemasFromAPI(request.apiKey).then(result => {
-        sendResponse(result);
-      }).catch(error => {
-        sendResponse({ success: false, error: error.message });
-      });
-      return true; // Keep message channel open for async response
+      sf.toggleDialog();
+      sendResponse({ dialogVisible: sf.dialogVisible });
     }
   }
   

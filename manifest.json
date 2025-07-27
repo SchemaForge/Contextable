@@ -6,7 +6,8 @@
   
   "permissions": [
     "storage",
-    "activeTab"
+    "activeTab",
+    "scripting"
   ],
   
   "host_permissions": [
@@ -25,9 +26,12 @@
     "run_at": "document_end"
   }],
   
+  "background": {
+    "service_worker": "background.js"
+  },
+  
   "action": {
-    "default_popup": "popup.html",
-    "default_title": "ContextOS"
+    "default_title": "ContextOS - Click to toggle widget"
   },
   
   "web_accessible_resources": [{
