@@ -518,6 +518,10 @@ class SchemaForge {
     if (toggleBtn) {
       toggleBtn.addEventListener('click', () => {
         this.isActive = !this.isActive;
+        // Reset injection flag when toggling to allow button to reappear
+        if (this.isActive) {
+          this.hasInjectedSchema = false;
+        }
         this.updateWidget();
       });
     }
@@ -530,6 +534,8 @@ class SchemaForge {
         if (selectedSchema) {
           this.activeSchema = selectedSchema;
           this.userSelectedSchema = true;
+          // Reset injection flag when changing schemas to allow re-enhancement
+          this.hasInjectedSchema = false;
           this.updateWidget();
           
           // Update button text immediately if button exists
@@ -539,6 +545,8 @@ class SchemaForge {
           }
         } else {
           this.activeSchema = null;
+          // Reset injection flag when clearing schema selection
+          this.hasInjectedSchema = false;
           this.updateWidget();
         }
       });
