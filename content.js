@@ -12,29 +12,40 @@ class SchemaForge {
     this.hasInjectedSchema = false; // Track if schema has been successfully injected
     this.userSelectedSchema = false; // Track if user has manually selected a schema
     this.dialogVisible = true; // Track dialog visibility state (default to visible)
-    // API key will be loaded from secure storage or environment
-    this.apiKey = this.getSecureApiKey();
+    // API key will be loaded from Chrome storage
+    this.apiKey = null;
     this.apiUrl = 'https://uycbruvaxgawpmdddqry.supabase.co/functions/v1/user-schemas-api';
     this.isLoadingSchemas = true;
     
     this.init();
   }
 
-  getSecureApiKey() {
-    // In a production environment, this should be loaded from:
-    // - Browser extension storage (chrome.storage)
-    // - Environment variables (for development)
-    // - Secure server endpoint
-    // For now, using the actual key but it won't be displayed in UI
-    return 'ctx_0f898399ac7705277c61cbc7ea04a1381df2a26248da9313c6ed5cb19b01f939';
+  async loadApiKey() {
+    try {
+      const result = await chrome.storage.local.get(['apiKey']);
+      this.apiKey = result.apiKey || null;
+      return this.apiKey;
+    } catch (error) {
+      console.error('ContextOS: Failed to load API key:', error);
+      return null;
+    }
   }
 
   async init() {
     console.log('ContextOS: Initializing...');
     this.createWidget();
     
-    // Load schemas from API
-    await this.loadSchemasFromAPI();
+    // Load API key first
+    await this.loadApiKey();
+    
+    // Load schemas from API only if we have an API key
+    if (this.apiKey) {
+      await this.loadSchemasFromAPI();
+    } else {
+      console.log('ContextOS: No API key found, skipping schema loading');
+      this.isLoadingSchemas = false;
+      this.updateWidget();
+    }
     
     // Set up mutation observer to recreate button when DOM changes
     this.setupMutationObserver();
@@ -62,20 +73,32 @@ class SchemaForge {
     }
   }
 
-  async loadSchemasFromAPI() {
+  async loadSchemasFromAPI(testApiKey = null) {
+    const apiKeyToUse = testApiKey || this.apiKey;
+    
+    if (!apiKeyToUse) {
+      throw new Error('No API key provided');
+    }
+    
     try {
       console.log('ContextOS: Loading schemas from API...');
-      const response = await fetch(`${this.apiUrl}?api_key=${this.apiKey}`);
+      const response = await fetch(`${this.apiUrl}?api_key=${apiKeyToUse}`);
       
       if (!response.ok) {
-        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+        if (response.status === 401 || response.status === 403) {
+          throw new Error('Invalid API key - please check your credentials');
+        } else if (response.status >= 500) {
+          throw new Error('Server error - please try again later');
+        } else {
+          throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+        }
       }
       
       const data = await response.json();
       
       if (data && Array.isArray(data.schemas)) {
         // Convert API schema format to internal format
-        this.schemas = data.schemas.map(schema => ({
+        const schemas = data.schemas.map(schema => ({
           id: schema.id,
           name: schema.name,
           company: {
@@ -102,29 +125,38 @@ class SchemaForge {
           ]
         }));
         
-        this.activeSchema = this.schemas.length > 0 ? this.schemas[0] : null;
-        console.log('ContextOS: Loaded', this.schemas.length, 'schemas from API');
+        // If this is not a test, update the instance
+        if (!testApiKey) {
+          this.schemas = schemas;
+          this.activeSchema = this.schemas.length > 0 ? this.schemas[0] : null;
+          console.log('ContextOS: Loaded', this.schemas.length, 'schemas from API');
+          this.isLoadingSchemas = false;
+          this.updateWidget();
+          
+          // Create button after schemas are loaded
+          this.createEnhanceButton();
+          setTimeout(() => {
+            this.createEnhanceButtonWithRetry();
+          }, 100);
+        }
+        
+        return { success: true, schemas: schemas, schemaCount: schemas.length };
       } else {
         throw new Error('Invalid API response format');
       }
       
-      this.isLoadingSchemas = false;
-      this.updateWidget();
-      
-      // Create button after schemas are loaded
-      this.createEnhanceButton();
-      setTimeout(() => {
-        this.createEnhanceButtonWithRetry();
-      }, 100);
-      
     } catch (error) {
       console.error('ContextOS: Failed to load schemas from API:', error);
-      this.isLoadingSchemas = false;
       
-      // No fallback schemas - just display error state
-      this.schemas = [];
-      this.activeSchema = null;
-      this.updateWidget();
+      if (!testApiKey) {
+        this.isLoadingSchemas = false;
+        // No fallback schemas - just display error state
+        this.schemas = [];
+        this.activeSchema = null;
+        this.updateWidget();
+      }
+      
+      return { success: false, error: error.message };
     }
   }
 
@@ -1217,6 +1249,26 @@ if (typeof chrome !== 'undefined' && chrome.runtime) {
   } else if (request.action === 'recreateButton') {
     if (sf && sf.isActive && !sf.hasInjectedSchema) {
       sf.createEnhanceButtonWithRetry();
+    }
+  } else if (request.action === 'updateApiKey') {
+    if (sf) {
+      sf.apiKey = request.apiKey;
+      // Reload schemas with new API key
+      sf.loadSchemasFromAPI().then(() => {
+        sendResponse({ success: true });
+      }).catch(error => {
+        sendResponse({ success: false, error: error.message });
+      });
+      return true; // Keep message channel open for async response
+    }
+  } else if (request.action === 'testApiKey') {
+    if (sf) {
+      sf.loadSchemasFromAPI(request.apiKey).then(result => {
+        sendResponse(result);
+      }).catch(error => {
+        sendResponse({ success: false, error: error.message });
+      });
+      return true; // Keep message channel open for async response
     }
   }
   
