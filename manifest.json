@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Contextable - AI Context Enhancement",
+  "name": "Context4U - AI Context Enhancement",
   "version": "1.0.0",
   "description": "Enhance ChatGPT with business context from your schemas",
   
@@ -31,7 +31,7 @@
   },
   
   "action": {
-          "default_title": "Contextable - Click to toggle widget"
+          "default_title": "Context4U - Click to toggle widget"
   },
   
   "web_accessible_resources": [{
