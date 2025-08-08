@@ -1444,6 +1444,34 @@ class SchemaForge {
       return;
     }
 
+    // Re-read current toggle and select states from the widget to ensure latest values
+    const widget = document.getElementById('sf-widget');
+    if (widget) {
+      // Sync enabledCategories from checkbox toggles
+      const nextEnabled = Object.assign({ business: true, role: true, project: true }, this.enabledCategories || {});
+      const toggleBusinessEl = widget.querySelector('#sf-cat-toggle-business');
+      const toggleRoleEl = widget.querySelector('#sf-cat-toggle-role');
+      const toggleProjectEl = widget.querySelector('#sf-cat-toggle-project');
+      if (toggleBusinessEl) nextEnabled.business = !!toggleBusinessEl.checked;
+      if (toggleRoleEl) nextEnabled.role = !!toggleRoleEl.checked;
+      if (toggleProjectEl) nextEnabled.project = !!toggleProjectEl.checked;
+      const hasToggleChanges = JSON.stringify(nextEnabled) !== JSON.stringify(this.enabledCategories || {});
+      if (hasToggleChanges) {
+        this.enabledCategories = nextEnabled;
+        try { chrome.storage.local.set({ enabledCategories: this.enabledCategories }); } catch (e) {}
+        console.log('Contextable: Detected toggle changes on click, updated enabledCategories:', this.enabledCategories);
+      }
+
+      // Sync selectedSchemasByCategory from current selects
+      const selectBusinessEl = widget.querySelector('#sf-schema-select-business');
+      const selectRoleEl = widget.querySelector('#sf-schema-select-role');
+      const selectProjectEl = widget.querySelector('#sf-schema-select-project');
+      if (!this.selectedSchemasByCategory) this.selectedSchemasByCategory = { business: null, role: null, project: null };
+      if (selectBusinessEl && selectBusinessEl.value) this.selectedSchemasByCategory.business = selectBusinessEl.value;
+      if (selectRoleEl && selectRoleEl.value) this.selectedSchemasByCategory.role = selectRoleEl.value;
+      if (selectProjectEl && selectProjectEl.value) this.selectedSchemasByCategory.project = selectProjectEl.value;
+    }
+
     // Collect selected schemas from state, respecting per-category toggles
     const categories = ['business', 'role', 'project'];
     const selectedIds = categories
