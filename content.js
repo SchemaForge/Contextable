@@ -488,7 +488,7 @@ class SchemaForge {
             <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f9fafb; border-radius: 8px; margin-bottom: 20px;">
               <span>Schema Enhancement</span>
               <button id="sf-toggle" style="background: ${this.isActive ? '#10b981' : '#6b7280'}; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500;">${this.isActive ? 'ON' : 'OFF'}</button>
-              <button id="sf-beforeafter-btn" style="background: ${this.currentWidgetPage === 'beforeafter' ? '#3b82f6' : '#6b7280'}; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: ${this.lastEnhancedPrompt ? 'pointer' : 'not-allowed'}; font-weight: 500; margin-left: 8px; opacity: ${this.lastEnhancedPrompt ? '1' : '0.6'};" ${this.lastEnhancedPrompt ? '' : 'disabled'}>Before/After</button>
+                                <button id="sf-beforeafter-btn" style="background: ${this.lastEnhancedPrompt ? '#10b981' : '#6b7280'}; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: ${this.lastEnhancedPrompt ? 'pointer' : 'not-allowed'}; font-weight: 500; margin-left: 8px; opacity: ${this.lastEnhancedPrompt ? '1' : '0.6'};" ${this.lastEnhancedPrompt ? '' : 'disabled'}>Before/After</button>
             </div>
             
             <div style="margin-bottom: 20px;">
@@ -584,7 +584,7 @@ class SchemaForge {
                 </div>
                 <div style="margin-top: 8px;">
                   <button id="sf-test-api-key" style="background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; opacity: ${this.getTestButtonDisabled() ? '0.7' : '1'};" ${this.getTestButtonDisabled() ? 'disabled' : ''}>
-                    ${this.apiKey && this.schemas.length > 0 ? 'Retest Connection' : 'Test Connection'}
+                    Connect
                   </button>
                 </div>
                 ${this.apiKey && this.schemas.length > 0 ? 
@@ -686,7 +686,7 @@ class SchemaForge {
     
     // Update button text based on current state
     const hasApiKeyAndSchemas = this.apiKey && this.schemas.length > 0;
-    testButton.textContent = hasApiKeyAndSchemas ? 'Retest Connection' : 'Test Connection';
+    testButton.textContent = 'Connect';
   }
 
   setupWidgetEventListeners(widget) {
