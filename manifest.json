@@ -13,13 +13,15 @@
   "host_permissions": [
     "https://chat.openai.com/*",
     "https://chatgpt.com/*",
+    "https://claude.ai/*",
     "https://uycbruvaxgawpmdddqry.supabase.co/*"
   ],
   
   "content_scripts": [{
     "matches": [
       "https://chat.openai.com/*",
-      "https://chatgpt.com/*"
+      "https://chatgpt.com/*",
+      "https://claude.ai/*"
     ],
     "js": ["content.js"],
     "css": ["styles.css"],
@@ -36,6 +38,6 @@
   
   "web_accessible_resources": [{
     "resources": [],
-    "matches": ["https://chat.openai.com/*", "https://chatgpt.com/*"]
+    "matches": ["https://chat.openai.com/*", "https://chatgpt.com/*", "https://claude.ai/*"]
   }]
 }
