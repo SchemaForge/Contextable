@@ -1471,22 +1471,88 @@ class SchemaForge {
   }
 
   buildEnhancedPrompt(originalPrompt, schemasArray) {
-    const blocks = (schemasArray || []).map(schema => {
-      return `Company: ${schema.company.name} - ${schema.company.industry}\n` +
-             `Brand Tone: ${schema.company.tone}\n` +
-             `Core Values: ${schema.company.values.join(', ')}\n\n` +
-             `TARGET PERSONA: ${schema.personas[0].name}\n` +
-             `- Key Traits: ${schema.personas[0].traits.join(', ')}\n` +
-             `- Pain Points: ${schema.personas[0].painPoints.join(', ')}\n` +
-             `- Preferred Channels: ${schema.personas[0].channels.join(', ')}\n\n` +
-             `CURRENT OBJECTIVES:\n` +
-             `- ${schema.objectives[0].description}\n` +
-             `- Key Metrics: ${schema.objectives[0].kpis.join(', ')}\n\n` +
-             `BRAND GUIDELINES:\n` +
-             `${schema.rules.map(rule => `- ${rule}`).join('\n')}`;
-    }).join('\n\n---\n\n');
+    const selected = Array.isArray(schemasArray) ? schemasArray : [];
+    const businessSchema = selected.find(s => s.schemaTypeCategory === 'Business') || null;
+    const roleSchema = selected.find(s => s.schemaTypeCategory === 'Role-specific') || null;
+    const projectSchema = selected.find(s => s.schemaTypeCategory === 'Project-specific') || null;
 
-    return `BUSINESS CONTEXT (Enhanced by Context4U):\n\n${blocks}\n\nUSER REQUEST: ${originalPrompt}\n\nPlease respond according to the contexts above, ensuring the output matches brand tone(s), addresses the target persona(s), and supports the current objective(s).`;
+    const getCompanyBlock = (schema) => {
+      if (!schema) return '';
+      const company = schema.company || {};
+      const personas = Array.isArray(schema.personas) && schema.personas.length ? schema.personas : [{ name: 'Stakeholder', traits: [], painPoints: [], channels: [] }];
+      const objectives = Array.isArray(schema.objectives) && schema.objectives.length ? schema.objectives : [{ description: 'Achieve business objectives', kpis: [] }];
+      const rules = Array.isArray(schema.rules) ? schema.rules : [];
+      return (
+        `Company: ${company.name || 'Unknown Company'} - ${company.industry || 'Unknown Industry'}\n` +
+        `Brand Tone: ${company.tone || 'Professional'}\n` +
+        `Core Values: ${(company.values || []).join(', ')}` +
+        `\n\nTARGET PERSONA: ${personas[0].name}\n` +
+        `- Key Traits: ${(personas[0].traits || []).join(', ')}\n` +
+        `- Pain Points: ${(personas[0].painPoints || []).join(', ')}\n` +
+        `- Preferred Channels: ${(personas[0].channels || []).join(', ')}` +
+        `\n\nCURRENT OBJECTIVES:\n` +
+        `- ${objectives[0].description}\n` +
+        `- Key Metrics: ${(objectives[0].kpis || []).join(', ')}` +
+        `\n\nBRAND GUIDELINES:\n` +
+        `${rules.map(r => `- ${r}`).join('\n')}`
+      );
+    };
+
+    const sections = [];
+
+    // Business context (prefer the explicit Business schema; if absent, fall back to any schema's company info)
+    const businessContextSource = businessSchema || selected[0] || null;
+    if (businessContextSource) {
+      sections.push(`BUSINESS CONTEXT (Enhanced by Context4U):\n\n${getCompanyBlock(businessContextSource)}`);
+    }
+
+    // Role persona & voice
+    if (roleSchema) {
+      const roleName = roleSchema.name || (roleSchema.personas?.[0]?.name) || 'Role Specialist';
+      const roleRules = Array.isArray(roleSchema.rules) ? roleSchema.rules : [];
+      const roleObjectives = Array.isArray(roleSchema.objectives) && roleSchema.objectives.length ? roleSchema.objectives[0] : null;
+      const objectiveLine = roleObjectives ? `Primary Focus: ${roleObjectives.description}. KPIs: ${(roleObjectives.kpis || []).join(', ')}.` : '';
+
+      sections.push(
+        [
+          'ROLE PERSONA & VOICE:',
+          `- Write the entire response from the perspective of the user's ${roleName}.`,
+          "- Use first-person voice appropriate for the role (e.g., 'I' when personal, 'we/our' for company context).",
+          '- Use domain-specific terminology and prioritization consistent with this role.',
+          objectiveLine ? `- ${objectiveLine}` : null,
+          ...(roleRules.length ? ['- Constraints & Preferences:', ...roleRules.map(r => `  - ${r}`)] : [])
+        ].filter(Boolean).join('\n')
+      );
+    }
+
+    // Project context
+    if (projectSchema) {
+      const companyName = (businessSchema?.company?.name) || (projectSchema.company?.name) || 'the user\'s company';
+      const tone = (businessSchema?.company?.tone) || (projectSchema.company?.tone);
+      const objective = Array.isArray(projectSchema.objectives) && projectSchema.objectives.length ? projectSchema.objectives[0] : null;
+      const rules = Array.isArray(projectSchema.rules) ? projectSchema.rules : [];
+
+      const lines = [];
+      lines.push(`PROJECT CONTEXT: ${projectSchema.name || 'Current Initiative'}`);
+      lines.push(`- Assume this is an initiative undertaken by ${companyName}.`);
+      if (tone) lines.push(`- Maintain the brand tone: ${tone}.`);
+      if (objective) lines.push(`- Project Objective: ${objective.description}. KPIs: ${(objective.kpis || []).join(', ')}.`);
+      if (rules.length) {
+        lines.push('- Project Constraints & Requirements:');
+        rules.forEach(r => lines.push(`  - ${r}`));
+      }
+
+      sections.push(lines.join('\n'));
+    }
+
+    // Compose final prompt with clear directives
+    const directives = [];
+    if (roleSchema) directives.push('Adopt the role-first-person perspective and priorities above.');
+    if (projectSchema) directives.push('Frame all recommendations within the project context for the user\'s company.');
+    directives.push('Respect any brand tone, values, objectives and rules specified above.');
+
+    const header = sections.join('\n\n---\n\n');
+    return `${header}\n\nUSER REQUEST: ${originalPrompt}\n\nINSTRUCTIONS:\n- ${directives.join('\n- ')}`;
   }
 
   showMessage(text, type = 'info') {
