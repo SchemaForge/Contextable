@@ -1545,6 +1545,9 @@ class SchemaForge {
     this.lastOriginalPrompt = originalText.trim();
     this.lastEnhancedPrompt = enhanced;
     this.lastEnhancedAt = Date.now();
+
+    // Re-render widget so Before/After button becomes enabled
+    this.updateWidget();
   }
 
   buildEnhancedPrompt(originalPrompt, schemasArray) {
