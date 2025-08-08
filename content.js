@@ -549,14 +549,6 @@ class SchemaForge {
                 </div>
               </div>
               
-              <div id="sf-schema-preview" style="background: #f9fafb; padding: 12px; border-radius: 6px; margin-top: 12px; font-size: 12px; display: ${this.activeSchema ? 'block' : 'none'};">
-                ${this.activeSchema ? `
-                  <h4 style="margin: 0 0 8px 0; color: #1f2937;">${this.activeSchema.company.name}</h4>
-                  <div style="color: #6b7280; margin-bottom: 4px;">Industry: ${this.activeSchema.company.industry}</div>
-                  <div style="color: #6b7280; margin-bottom: 4px;">Tone: ${this.activeSchema.company.tone}</div>
-                  <div style="color: #6b7280;">Target: ${this.activeSchema.personas[0].name}</div>
-                ` : ''}
-              </div>
             </div>
           </div>
           
