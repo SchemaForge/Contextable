@@ -19,6 +19,9 @@ class SchemaForge {
     this.isLoadingSchemas = true;
     this.selectedSchemasByCategory = { business: null, role: null, project: null };
     this.enabledCategories = { business: true, role: true, project: true };
+    // NEW: enhancement information UI state
+    this.infoViewMode = 'list';
+    this.infoCollapsed = false;
     
     this.init();
 
@@ -139,6 +142,8 @@ class SchemaForge {
             name: schema.name,
             typeRaw: rawType,
             schemaTypeCategory: category,
+            // NEW: retain full raw schema JSON for info rendering
+            raw: schema,
             company: {
               name: schema.companyName || 'Unknown Company',
               industry: rawType || 'Unknown Industry',
@@ -524,16 +529,23 @@ class SchemaForge {
                   <input type="checkbox" id="sf-cat-toggle-project" ${this.enabledCategories && this.enabledCategories.project ? 'checked' : ''} />
                 </label>
               </div>
-              <select id="sf-schema-select-project" style="display: ${projectSchemas.length ? 'block' : 'none'}; width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; background: white; font-size: 14px;" ${this.isLoadingSchemas || !this.apiKey || (this.enabledCategories && !this.enabledCategories.project) ? 'disabled' : ''}>
-                ${!this.apiKey ? 
-                  '<option value="">Please configure API key first</option>' :
-                  this.isLoadingSchemas ? 
-                  '<option value="">Loading schemas...</option>' : 
-                  projectSchemas.length > 0 ? 
-                  projectSchemas.map(s => `<option value="${s.id}" ${this.selectedSchemasByCategory && this.selectedSchemasByCategory.project === s.id ? 'selected' : ''}>${s.name}</option>`).join('') :
-                  ''
-                }
-              </select>
+              <!-- REPLACED: Project-specific dropdown with Enhancement information panel -->
+              <div id="sf-enhancement-info" style="background: #f9fafb; padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px;">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <h4 style="margin: 0; color: #1f2937;">Enhancement information</h4>
+                    <button id="sf-info-collapse" style="background: transparent; border: none; color: #3b82f6; cursor: pointer; padding: 4px 8px;">${this.infoCollapsed ? 'Expand' : 'Collapse'}</button>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="font-size: 12px; color: #374151;">View:</span>
+                    <button id="sf-info-view-list" style="border: 1px solid ${this.infoViewMode === 'list' ? '#3b82f6' : '#d1d5db'}; background: ${this.infoViewMode === 'list' ? '#e0ecff' : 'white'}; color: #1f2937; padding: 4px 8px; border-radius: 6px; cursor: pointer;">List</button>
+                    <button id="sf-info-view-json" style="border: 1px solid ${this.infoViewMode === 'json' ? '#3b82f6' : '#d1d5db'}; background: ${this.infoViewMode === 'json' ? '#e0ecff' : 'white'}; color: #1f2937; padding: 4px 8px; border-radius: 6px; cursor: pointer;">JSON</button>
+                  </div>
+                </div>
+                <div id="sf-info-content" style="margin-top: 10px; display: ${this.infoCollapsed ? 'none' : 'block'};">
+                  ${this.renderEnhancementInfo()}
+                </div>
+              </div>
               
               <div id="sf-schema-preview" style="background: #f9fafb; padding: 12px; border-radius: 6px; margin-top: 12px; font-size: 12px; display: ${this.activeSchema ? 'block' : 'none'};">
                 ${this.activeSchema ? `
@@ -725,7 +737,7 @@ class SchemaForge {
     };
     if (selectBusiness && !this.isLoadingSchemas) selectBusiness.addEventListener('change', onSelectChange);
     if (selectRole && !this.isLoadingSchemas) selectRole.addEventListener('change', onSelectChange);
-    if (selectProject && !this.isLoadingSchemas) selectProject.addEventListener('change', onSelectChange);
+    // Note: project dropdown removed; no listener added for it
 
     const toggleBusiness = widget.querySelector('#sf-cat-toggle-business');
     const toggleRole = widget.querySelector('#sf-cat-toggle-role');
@@ -740,7 +752,14 @@ class SchemaForge {
     if (toggleBusiness) toggleBusiness.addEventListener('change', (e) => onCategoryToggle('business', e.target.checked));
     if (toggleRole) toggleRole.addEventListener('change', (e) => onCategoryToggle('role', e.target.checked));
     if (toggleProject) toggleProject.addEventListener('change', (e) => onCategoryToggle('project', e.target.checked));
-    
+
+    // NEW: Enhancement info controls
+    const viewListBtn = widget.querySelector('#sf-info-view-list');
+    const viewJsonBtn = widget.querySelector('#sf-info-view-json');
+    const collapseBtn = widget.querySelector('#sf-info-collapse');
+    if (viewListBtn) viewListBtn.addEventListener('click', () => { this.infoViewMode = 'list'; this.updateWidget(); });
+    if (viewJsonBtn) viewJsonBtn.addEventListener('click', () => { this.infoViewMode = 'json'; this.updateWidget(); });
+    if (collapseBtn) collapseBtn.addEventListener('click', () => { this.infoCollapsed = !this.infoCollapsed; this.updateWidget(); });
 
     // API Key management
     const testApiKeyBtn = widget.querySelector('#sf-test-api-key');
@@ -1765,6 +1784,86 @@ class SchemaForge {
     }
     
           console.log('Contextable: Dialog visibility toggled to:', this.dialogVisible);
+  }
+
+  // NEW: helpers to render enhancement information panel
+  getSelectedSchemas() {
+    const categories = ['business', 'role', 'project'];
+    const enabled = Object.assign({ business: true, role: true, project: true }, this.enabledCategories || {});
+    const selectedIds = (this.selectedSchemasByCategory || {});
+    const result = [];
+    for (const category of categories) {
+      if (!enabled[category]) continue;
+      const id = selectedIds[category];
+      if (!id) continue;
+      const found = (this.schemas || []).find(s => s.id === id);
+      if (found) result.push(found);
+    }
+    return result;
+  }
+
+  renderEnhancementInfo() {
+    if (!this.apiKey) {
+      return '<div style="color:#6b7280; font-size:12px;">Please configure API key to load schemas.</div>';
+    }
+    if (this.isLoadingSchemas) {
+      return '<div style="color:#6b7280; font-size:12px;">Loading schemas...</div>';
+    }
+    const selected = this.getSelectedSchemas();
+    if (!selected.length) {
+      return '<div style="color:#6b7280; font-size:12px;">No schemas selected. Choose at least one in Business/Role tabs.</div>';
+    }
+    return selected.map(schema => {
+      const header = `<div style=\"font-weight:600; color:#111827; margin: 6px 0;\">${this.escapeHtml(schema.name || '(Untitled schema)')}</div>`;
+      if (this.infoViewMode === 'json') {
+        const json = this.escapeHtml(JSON.stringify(schema.raw || schema, null, 2));
+        return `<div style=\"background:white; border:1px solid #e5e7eb; border-radius:6px; padding:8px; margin-bottom:10px;\">${header}<pre style=\"margin:0; font-size:12px; color:#111827; overflow:auto; max-height:180px;\">${json}</pre></div>`;
+      }
+      // list view
+      const list = this.renderKeyValueList(schema.raw || schema);
+      return `<div style=\"background:white; border:1px solid #e5e7eb; border-radius:6px; padding:8px; margin-bottom:10px;\">${header}${list}</div>`;
+    }).join('');
+  }
+
+  renderKeyValueList(obj) {
+    try {
+      const flatEntries = this.flattenObjectToEntries(obj || {}, '');
+      if (!flatEntries.length) return '<div style="color:#6b7280; font-size:12px;">No fields</div>';
+      const rows = flatEntries.map(({ key, value }) => {
+        const isPrimitive = (value === null) || ['string','number','boolean'].includes(typeof value);
+        const renderedValue = isPrimitive ? String(value) : JSON.stringify(value);
+        return `<div style=\"display:flex; gap:8px; align-items:flex-start; padding:2px 0;\"><div style=\"min-width:140px; color:#374151; font-weight:500;\">${this.escapeHtml(key)}</div><div style=\"color:#111827;\">${this.escapeHtml(renderedValue)}</div></div>`;
+      }).join('');
+      return `<div style=\"font-size:12px;\">${rows}</div>`;
+    } catch (e) {
+      return '<div style="color:#ef4444; font-size:12px;">Failed to render fields</div>';
+    }
+  }
+
+  flattenObjectToEntries(obj, parentKey) {
+    const entries = [];
+    const isArray = Array.isArray(obj);
+    const keys = isArray ? Object.keys(obj) : Object.keys(obj);
+    for (const k of keys) {
+      const value = obj[k];
+      const path = parentKey ? `${parentKey}.${k}` : `${k}`;
+      if (value && typeof value === 'object' && !(value instanceof Date)) {
+        entries.push(...this.flattenObjectToEntries(value, path));
+      } else {
+        entries.push({ key: path, value });
+      }
+    }
+    return entries;
+  }
+
+  escapeHtml(unsafe) {
+    const str = String(unsafe == null ? '' : unsafe);
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
 }
 
