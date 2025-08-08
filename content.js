@@ -463,7 +463,7 @@ class SchemaForge {
     const widget = document.createElement('div');
     widget.id = 'sf-widget';
     widget.innerHTML = `
-      <div style="background: white; border: 2px solid #3b82f6; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; width: 100%;">
+      <div style="background: white; border: 2px solid #3b82f6; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; width: 100%; display: flex; flex-direction: column; height: 100%;">
         <!-- Header -->
         <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
           <h1 style="margin: 0; font-size: 18px; font-weight: 600;">Context4U</h1>
@@ -477,7 +477,7 @@ class SchemaForge {
         </div>
         
         <!-- Content -->
-        <div style="padding: 20px;">
+        <div style="padding: 20px; flex: 1 1 auto; overflow: auto; min-height: 0;">
           <!-- Schemas Page -->
           <div id="sf-schemas-page" class="sf-page" style="display: ${this.currentWidgetPage === 'schemas' ? 'block' : 'none'};">
             <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f9fafb; border-radius: 8px; margin-bottom: 20px;">
@@ -534,14 +534,14 @@ class SchemaForge {
                 <div style="display: flex; align-items: center; justify-content: space-between;">
                   <div style="display: flex; align-items: center; gap: 8px;">
                     <h4 style="margin: 0; color: #1f2937;">Enhancement information</h4>
-                    <button id="sf-info-collapse" style="background: transparent; border: none; color: #3b82f6; cursor: pointer; padding: 4px 8px; display:flex; align-items:center; gap:6px;" aria-label="Toggle details">
-                      <span style="display:inline-block; transition: transform 0.2s; transform: rotate(${this.infoCollapsed ? '0deg' : '180deg'});">▼</span>
-                    </button>
                   </div>
                   <div style="display: flex; align-items: center; gap: 6px;">
                     <span style="font-size: 12px; color: #374151;">View:</span>
                     <button id="sf-info-view-list" style="border: 1px solid ${this.infoViewMode === 'list' ? '#3b82f6' : '#d1d5db'}; background: ${this.infoViewMode === 'list' ? '#e0ecff' : 'white'}; color: #1f2937; padding: 4px 8px; border-radius: 6px; cursor: pointer;">List</button>
                     <button id="sf-info-view-json" style="border: 1px solid ${this.infoViewMode === 'json' ? '#3b82f6' : '#d1d5db'}; background: ${this.infoViewMode === 'json' ? '#e0ecff' : 'white'}; color: #1f2937; padding: 4px 8px; border-radius: 6px; cursor: pointer;">JSON</button>
+                    <button id="sf-info-collapse" style="background: transparent; border: none; color: #3b82f6; cursor: pointer; padding: 4px 8px; display:flex; align-items:center; gap:6px;" aria-label="Toggle details">
+                      <span style="display:inline-block; transition: transform 0.2s; transform: rotate(${this.infoCollapsed ? '0deg' : '180deg'});">▼</span>
+                    </button>
                   </div>
                 </div>
                 <div id="sf-info-content" style="margin-top: 10px; ${this.infoCollapsed ? 'max-height: 96px; overflow: hidden;' : 'max-height: 60vh; overflow: auto;'}">
@@ -593,8 +593,8 @@ class SchemaForge {
       top: 20px;
       right: 20px;
       width: min(420px, 95vw);
-      max-height: 90vh;
-      overflow: auto;
+      height: calc(100vh - 120px);
+      overflow: hidden;
       z-index: 10000;
     `;
     
