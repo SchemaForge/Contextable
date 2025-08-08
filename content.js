@@ -21,7 +21,7 @@ class SchemaForge {
     this.enabledCategories = { business: true, role: true, project: true };
     // NEW: enhancement information UI state
     this.infoViewMode = 'list';
-    this.infoCollapsed = false;
+    this.infoCollapsed = true;
     
     this.init();
 
@@ -534,7 +534,9 @@ class SchemaForge {
                 <div style="display: flex; align-items: center; justify-content: space-between;">
                   <div style="display: flex; align-items: center; gap: 8px;">
                     <h4 style="margin: 0; color: #1f2937;">Enhancement information</h4>
-                    <button id="sf-info-collapse" style="background: transparent; border: none; color: #3b82f6; cursor: pointer; padding: 4px 8px;">${this.infoCollapsed ? 'Expand' : 'Collapse'}</button>
+                    <button id="sf-info-collapse" style="background: transparent; border: none; color: #3b82f6; cursor: pointer; padding: 4px 8px; display:flex; align-items:center; gap:6px;" aria-label="Toggle details">
+                      <span style="display:inline-block; transition: transform 0.2s; transform: rotate(${this.infoCollapsed ? '0deg' : '180deg'});">▼</span>
+                    </button>
                   </div>
                   <div style="display: flex; align-items: center; gap: 6px;">
                     <span style="font-size: 12px; color: #374151;">View:</span>
@@ -542,7 +544,7 @@ class SchemaForge {
                     <button id="sf-info-view-json" style="border: 1px solid ${this.infoViewMode === 'json' ? '#3b82f6' : '#d1d5db'}; background: ${this.infoViewMode === 'json' ? '#e0ecff' : 'white'}; color: #1f2937; padding: 4px 8px; border-radius: 6px; cursor: pointer;">JSON</button>
                   </div>
                 </div>
-                <div id="sf-info-content" style="margin-top: 10px; display: ${this.infoCollapsed ? 'none' : 'block'};">
+                <div id="sf-info-content" style="margin-top: 10px; ${this.infoCollapsed ? 'max-height: 96px; overflow: hidden;' : 'max-height: 60vh; overflow: auto;'}">
                   ${this.renderEnhancementInfo()}
                 </div>
               </div>
@@ -598,7 +600,9 @@ class SchemaForge {
       position: fixed;
       top: 20px;
       right: 20px;
-      width: 350px;
+      width: min(420px, 95vw);
+      max-height: 90vh;
+      overflow: auto;
       z-index: 10000;
     `;
     
@@ -1817,7 +1821,7 @@ class SchemaForge {
       const header = `<div style=\"font-weight:600; color:#111827; margin: 6px 0;\">${this.escapeHtml(schema.name || '(Untitled schema)')}</div>`;
       if (this.infoViewMode === 'json') {
         const json = this.escapeHtml(JSON.stringify(schema.raw || schema, null, 2));
-        return `<div style=\"background:white; border:1px solid #e5e7eb; border-radius:6px; padding:8px; margin-bottom:10px;\">${header}<pre style=\"margin:0; font-size:12px; color:#111827; overflow:auto; max-height:180px;\">${json}</pre></div>`;
+        return `<div style=\"background:white; border:1px solid #e5e7eb; border-radius:6px; padding:8px; margin-bottom:10px;\">${header}<pre style=\"margin:0; font-size:12px; color:#111827; overflow:visible; max-height:none;\">${json}</pre></div>`;
       }
       // list view
       const list = this.renderKeyValueList(schema.raw || schema);
