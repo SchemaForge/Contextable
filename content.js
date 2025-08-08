@@ -120,32 +120,43 @@ class SchemaForge {
       
       if (data && Array.isArray(data.schemas)) {
         // Convert API schema format to internal format
-        const schemas = data.schemas.map(schema => ({
-          id: schema.id,
-          name: schema.name,
-          company: {
-            name: schema.companyName || 'Unknown Company',
-            industry: schema.type || 'Unknown Industry',
-            tone: schema.tone || 'Professional',
-            values: Array.isArray(schema.keyGoals) ? schema.keyGoals.slice(0, 3) : ['Data-driven decisions']
-          },
-          personas: [{
-            name: Array.isArray(schema.targetAudience) ? schema.targetAudience[0] || 'Business Professional' : 'Business Professional',
-            traits: ['Professional', 'Goal-oriented', 'Strategic'],
-            painPoints: ['Ineffective messaging', 'Poor targeting'],
-            channels: ['Email', 'LinkedIn', 'Content Marketing']
-          }],
-          objectives: [{
-            name: Array.isArray(schema.keyGoals) ? schema.keyGoals[0] || 'Improve Performance' : 'Improve Performance',
-            description: schema.description || 'Optimize business outcomes',
-            kpis: ['Conversion rate', 'Engagement metrics']
-          }],
-          rules: [
-            schema.tone ? `Match tone: ${schema.tone}` : 'Use professional tone',
-            'Include relevant business context',
-            'Focus on key objectives and target audience'
-          ]
-        }));
+        const schemas = data.schemas.map(schema => {
+          const rawType = schema.type || '';
+          const category = this.categorizeSchemaType(rawType);
+          return {
+            id: schema.id,
+            name: schema.name,
+            typeRaw: rawType,
+            schemaTypeCategory: category,
+            company: {
+              name: schema.companyName || 'Unknown Company',
+              industry: rawType || 'Unknown Industry',
+              tone: schema.tone || 'Professional',
+              values: Array.isArray(schema.keyGoals) ? schema.keyGoals.slice(0, 3) : ['Data-driven decisions']
+            },
+            personas: [{
+              name: Array.isArray(schema.targetAudience) ? schema.targetAudience[0] || 'Business Professional' : 'Business Professional',
+              traits: ['Professional', 'Goal-oriented', 'Strategic'],
+              painPoints: ['Ineffective messaging', 'Poor targeting'],
+              channels: ['Email', 'LinkedIn', 'Content Marketing']
+            }],
+            objectives: [{
+              name: Array.isArray(schema.keyGoals) ? schema.keyGoals[0] || 'Improve Performance' : 'Improve Performance',
+              description: schema.description || 'Optimize business outcomes',
+              kpis: ['Conversion rate', 'Engagement metrics']
+            }],
+            rules: [
+              schema.tone ? `Match tone: ${schema.tone}` : 'Use professional tone',
+              'Include relevant business context',
+              'Focus on key objectives and target audience'
+            ]
+          };
+        });
+
+        // Ensure activeSchema aligns with current categories if previously selected one disappears
+        if (this.activeSchema && !schemas.find(s => s.id === this.activeSchema.id)) {
+          this.activeSchema = schemas[0] || null;
+        }
         
         // If this is not a test, update the instance
         if (!testApiKey) {
@@ -182,7 +193,26 @@ class SchemaForge {
     }
   }
 
+  categorizeSchemaType(rawType) {
+    const normalized = String(rawType || '').trim().toLowerCase();
+    if (!normalized) return 'Business';
 
+    // Map common variants
+    const isBusiness = ['business', 'org', 'organization', 'company', 'brand'].includes(normalized);
+    if (isBusiness) return 'Business';
+
+    const isRole = ['role-specific', 'role', 'persona', 'function'].includes(normalized);
+    if (isRole) return 'Role-specific';
+
+    const isProject = ['project-specific', 'project', 'job-specific', 'job', 'campaign', 'initiative'].includes(normalized);
+    if (isProject) return 'Project-specific';
+
+    // Fallback: heuristic keywords
+    if (normalized.includes('role')) return 'Role-specific';
+    if (normalized.includes('project') || normalized.includes('job')) return 'Project-specific';
+
+    return 'Business';
+  }
 
   isButtonProperlyPositioned(button) {
     if (!button) return false;
@@ -400,6 +430,11 @@ class SchemaForge {
       this.currentWidgetPage = this.apiKey ? 'schemas' : 'user';
     }
 
+    // Prepare categorized schema lists
+    const businessSchemas = (this.schemas || []).filter(s => s.schemaTypeCategory === 'Business');
+    const roleSchemas = (this.schemas || []).filter(s => s.schemaTypeCategory === 'Role-specific');
+    const projectSchemas = (this.schemas || []).filter(s => s.schemaTypeCategory === 'Project-specific');
+
     const widget = document.createElement('div');
     widget.id = 'sf-widget';
     widget.innerHTML = `
@@ -426,15 +461,39 @@ class SchemaForge {
             </div>
             
             <div style="margin-bottom: 20px;">
-              <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Select Schema:</label>
-              <select id="sf-schema-select" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; background: white; font-size: 14px;" ${this.isLoadingSchemas || !this.apiKey ? 'disabled' : ''}>
+              <label style="display: ${businessSchemas.length ? 'block' : 'none'}; margin-bottom: 8px; font-weight: 500; color: #374151;">Business Schemas:</label>
+              <select id="sf-schema-select-business" style="display: ${businessSchemas.length ? 'block' : 'none'}; width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; background: white; font-size: 14px; margin-bottom: 12px;" ${this.isLoadingSchemas || !this.apiKey ? 'disabled' : ''}>
                 ${!this.apiKey ? 
                   '<option value="">Please configure API key first</option>' :
                   this.isLoadingSchemas ? 
                   '<option value="">Loading schemas...</option>' : 
-                  this.schemas.length > 0 ? 
-                  this.schemas.map(s => `<option value="${s.id}" ${this.activeSchema && s.id === this.activeSchema.id ? 'selected' : ''}>${s.name}</option>`).join('') :
-                  '<option value="">No schemas available</option>'
+                  businessSchemas.length > 0 ? 
+                  businessSchemas.map(s => `<option value="${s.id}" ${this.activeSchema && s.id === this.activeSchema.id ? 'selected' : ''}>${s.name}</option>`).join('') :
+                  ''
+                }
+              </select>
+
+              <label style="display: ${roleSchemas.length ? 'block' : 'none'}; margin-bottom: 8px; font-weight: 500; color: #374151;">Role-specific Schemas:</label>
+              <select id="sf-schema-select-role" style="display: ${roleSchemas.length ? 'block' : 'none'}; width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; background: white; font-size: 14px; margin-bottom: 12px;" ${this.isLoadingSchemas || !this.apiKey ? 'disabled' : ''}>
+                ${!this.apiKey ? 
+                  '<option value="">Please configure API key first</option>' :
+                  this.isLoadingSchemas ? 
+                  '<option value="">Loading schemas...</option>' : 
+                  roleSchemas.length > 0 ? 
+                  roleSchemas.map(s => `<option value="${s.id}" ${this.activeSchema && s.id === this.activeSchema.id ? 'selected' : ''}>${s.name}</option>`).join('') :
+                  ''
+                }
+              </select>
+
+              <label style="display: ${projectSchemas.length ? 'block' : 'none'}; margin-bottom: 8px; font-weight: 500; color: #374151;">Project-specific Schemas:</label>
+              <select id="sf-schema-select-project" style="display: ${projectSchemas.length ? 'block' : 'none'}; width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; background: white; font-size: 14px;" ${this.isLoadingSchemas || !this.apiKey ? 'disabled' : ''}>
+                ${!this.apiKey ? 
+                  '<option value="">Please configure API key first</option>' :
+                  this.isLoadingSchemas ? 
+                  '<option value="">Loading schemas...</option>' : 
+                  projectSchemas.length > 0 ? 
+                  projectSchemas.map(s => `<option value="${s.id}" ${this.activeSchema && s.id === this.activeSchema.id ? 'selected' : ''}>${s.name}</option>`).join('') :
+                  ''
                 }
               </select>
               
@@ -599,31 +658,29 @@ class SchemaForge {
       });
     }
 
-    // Schema selection
-    const schemaSelect = widget.querySelector('#sf-schema-select');
-    if (schemaSelect && !this.isLoadingSchemas) {
-      schemaSelect.addEventListener('change', (e) => {
-        const selectedSchema = this.schemas.find(s => s.id === e.target.value);
-        if (selectedSchema) {
-          this.activeSchema = selectedSchema;
-          this.userSelectedSchema = true;
-          // Reset injection flag when changing schemas to allow re-enhancement
-          this.hasInjectedSchema = false;
-          this.updateWidget();
-          
-          // Update button text immediately if button exists
-          const existingButton = document.getElementById('sf-enhance-btn');
-          if (existingButton) {
-            existingButton.textContent = this.getButtonText();
-          }
-        } else {
-          this.activeSchema = null;
-          // Reset injection flag when clearing schema selection
-          this.hasInjectedSchema = false;
-          this.updateWidget();
-        }
-      });
-    }
+    // Schema selection (three categorized dropdowns)
+    const selectBusiness = widget.querySelector('#sf-schema-select-business');
+    const selectRole = widget.querySelector('#sf-schema-select-role');
+    const selectProject = widget.querySelector('#sf-schema-select-project');
+    const onSelectChange = (e) => {
+      const selectedSchema = this.schemas.find(s => s.id === e.target.value);
+      if (selectedSchema) {
+        this.activeSchema = selectedSchema;
+        this.userSelectedSchema = true;
+        this.hasInjectedSchema = false;
+        this.updateWidget();
+        const existingButton = document.getElementById('sf-enhance-btn');
+        if (existingButton) existingButton.textContent = this.getButtonText();
+      } else {
+        this.activeSchema = null;
+        this.hasInjectedSchema = false;
+        this.updateWidget();
+      }
+    };
+    if (selectBusiness && !this.isLoadingSchemas) selectBusiness.addEventListener('change', onSelectChange);
+    if (selectRole && !this.isLoadingSchemas) selectRole.addEventListener('change', onSelectChange);
+    if (selectProject && !this.isLoadingSchemas) selectProject.addEventListener('change', onSelectChange);
+    
 
     // API Key management
     const testApiKeyBtn = widget.querySelector('#sf-test-api-key');
