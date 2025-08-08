@@ -18,8 +18,18 @@ class SchemaForge {
     this.apiUrl = 'https://uycbruvaxgawpmdddqry.supabase.co/functions/v1/user-schemas-api';
     this.isLoadingSchemas = true;
     this.selectedSchemasByCategory = { business: null, role: null, project: null };
+    this.enabledCategories = { business: true, role: true, project: true };
     
     this.init();
+
+    // Load stored category toggles if present
+    chrome.storage.local.get(['enabledCategories']).then((res) => {
+      if (res && res.enabledCategories) {
+        this.enabledCategories = Object.assign({ business: true, role: true, project: true }, res.enabledCategories);
+        this.updateWidget();
+      }
+    }).catch(() => {});
+
   }
 
   async loadApiKey() {
@@ -471,47 +481,56 @@ class SchemaForge {
             </div>
             
             <div style="margin-bottom: 20px;">
-              <label style="display: ${businessSchemas.length ? 'block' : 'none'}; margin-bottom: 8px; font-weight: 500; color: #374151;">Business Schemas:</label>
-              <select id="sf-schema-select-business" style="display: ${businessSchemas.length ? 'block' : 'none'}; width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; background: white; font-size: 14px; margin-bottom: 12px;" ${this.isLoadingSchemas || !this.apiKey ? 'disabled' : ''}>
+              <div style="display: ${businessSchemas.length ? 'flex' : 'none'}; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                <label style="font-weight: 500; color: #374151;">Business Schemas:</label>
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #374151;">
+                  <span>Include</span>
+                  <input type="checkbox" id="sf-cat-toggle-business" ${this.enabledCategories && this.enabledCategories.business ? 'checked' : ''} />
+                </label>
+              </div>
+              <select id="sf-schema-select-business" style="display: ${businessSchemas.length ? 'block' : 'none'}; width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; background: white; font-size: 14px; margin-bottom: 12px;" ${this.isLoadingSchemas || !this.apiKey || (this.enabledCategories && !this.enabledCategories.business) ? 'disabled' : ''}>
                 ${!this.apiKey ? 
                   '<option value="">Please configure API key first</option>' :
                   this.isLoadingSchemas ? 
                   '<option value="">Loading schemas...</option>' : 
                   businessSchemas.length > 0 ?
-                  [
-                    `<option value="__ignore__" ${this.selectedSchemasByCategory && this.selectedSchemasByCategory.business === null ? 'selected' : ''}>Ignore this Type of Schema</option>`,
-                    ...businessSchemas.map(s => `<option value="${s.id}" ${this.selectedSchemasByCategory && this.selectedSchemasByCategory.business === s.id ? 'selected' : ''}>${s.name}</option>`)
-                  ].join('') :
+                  businessSchemas.map(s => `<option value="${s.id}" ${this.selectedSchemasByCategory && this.selectedSchemasByCategory.business === s.id ? 'selected' : ''}>${s.name}</option>`).join('') :
                   ''
                 }
               </select>
 
-              <label style="display: ${roleSchemas.length ? 'block' : 'none'}; margin-bottom: 8px; font-weight: 500; color: #374151;">Role-specific Schemas:</label>
-              <select id="sf-schema-select-role" style="display: ${roleSchemas.length ? 'block' : 'none'}; width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; background: white; font-size: 14px; margin-bottom: 12px;" ${this.isLoadingSchemas || !this.apiKey ? 'disabled' : ''}>
+              <div style="display: ${roleSchemas.length ? 'flex' : 'none'}; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                <label style="font-weight: 500; color: #374151;">Role-specific Schemas:</label>
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #374151;">
+                  <span>Include</span>
+                  <input type="checkbox" id="sf-cat-toggle-role" ${this.enabledCategories && this.enabledCategories.role ? 'checked' : ''} />
+                </label>
+              </div>
+              <select id="sf-schema-select-role" style="display: ${roleSchemas.length ? 'block' : 'none'}; width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; background: white; font-size: 14px; margin-bottom: 12px;" ${this.isLoadingSchemas || !this.apiKey || (this.enabledCategories && !this.enabledCategories.role) ? 'disabled' : ''}>
                 ${!this.apiKey ? 
                   '<option value="">Please configure API key first</option>' :
                   this.isLoadingSchemas ? 
                   '<option value="">Loading schemas...</option>' : 
                   roleSchemas.length > 0 ? 
-                  [
-                    `<option value="__ignore__" ${this.selectedSchemasByCategory && this.selectedSchemasByCategory.role === null ? 'selected' : ''}>Ignore this Type of Schema</option>`,
-                    ...roleSchemas.map(s => `<option value="${s.id}" ${this.selectedSchemasByCategory && this.selectedSchemasByCategory.role === s.id ? 'selected' : ''}>${s.name}</option>`)
-                  ].join('') :
+                  roleSchemas.map(s => `<option value="${s.id}" ${this.selectedSchemasByCategory && this.selectedSchemasByCategory.role === s.id ? 'selected' : ''}>${s.name}</option>`).join('') :
                   ''
                 }
               </select>
 
-              <label style="display: ${projectSchemas.length ? 'block' : 'none'}; margin-bottom: 8px; font-weight: 500; color: #374151;">Project-specific Schemas:</label>
-              <select id="sf-schema-select-project" style="display: ${projectSchemas.length ? 'block' : 'none'}; width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; background: white; font-size: 14px;" ${this.isLoadingSchemas || !this.apiKey ? 'disabled' : ''}>
+              <div style="display: ${projectSchemas.length ? 'flex' : 'none'}; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                <label style="font-weight: 500; color: #374151;">Project-specific Schemas:</label>
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #374151;">
+                  <span>Include</span>
+                  <input type="checkbox" id="sf-cat-toggle-project" ${this.enabledCategories && this.enabledCategories.project ? 'checked' : ''} />
+                </label>
+              </div>
+              <select id="sf-schema-select-project" style="display: ${projectSchemas.length ? 'block' : 'none'}; width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; background: white; font-size: 14px;" ${this.isLoadingSchemas || !this.apiKey || (this.enabledCategories && !this.enabledCategories.project) ? 'disabled' : ''}>
                 ${!this.apiKey ? 
                   '<option value="">Please configure API key first</option>' :
                   this.isLoadingSchemas ? 
                   '<option value="">Loading schemas...</option>' : 
                   projectSchemas.length > 0 ? 
-                  [
-                    `<option value="__ignore__" ${this.selectedSchemasByCategory && this.selectedSchemasByCategory.project === null ? 'selected' : ''}>Ignore this Type of Schema</option>`,
-                    ...projectSchemas.map(s => `<option value="${s.id}" ${this.selectedSchemasByCategory && this.selectedSchemasByCategory.project === s.id ? 'selected' : ''}>${s.name}</option>`)
-                  ].join('') :
+                  projectSchemas.map(s => `<option value="${s.id}" ${this.selectedSchemasByCategory && this.selectedSchemasByCategory.project === s.id ? 'selected' : ''}>${s.name}</option>`).join('') :
                   ''
                 }
               </select>
@@ -683,7 +702,7 @@ class SchemaForge {
     const selectProject = widget.querySelector('#sf-schema-select-project');
     const onSelectChange = (e) => {
       const value = e.target.value;
-      const isIgnore = value === '__ignore__' || value === '';
+      if (!value) return;
       let category = null;
       if (e.target.id === 'sf-schema-select-business') category = 'business';
       if (e.target.id === 'sf-schema-select-role') category = 'role';
@@ -693,30 +712,34 @@ class SchemaForge {
         this.selectedSchemasByCategory = { business: null, role: null, project: null };
       }
 
-      if (isIgnore) {
-        if (category) this.selectedSchemasByCategory[category] = null;
-        // Do not change activeSchema when ignoring a category
+      const selectedSchema = this.schemas.find(s => s.id === value);
+      if (selectedSchema) {
+        if (category) this.selectedSchemasByCategory[category] = selectedSchema.id;
+        this.activeSchema = selectedSchema; // keep preview/button text meaningful
         this.userSelectedSchema = true;
         this.hasInjectedSchema = false;
         this.updateWidget();
         const existingButton = document.getElementById('sf-enhance-btn');
         if (existingButton) existingButton.textContent = this.getButtonText();
-      } else {
-        const selectedSchema = this.schemas.find(s => s.id === value);
-        if (selectedSchema) {
-          if (category) this.selectedSchemasByCategory[category] = selectedSchema.id;
-          this.activeSchema = selectedSchema; // keep preview/button text meaningful
-          this.userSelectedSchema = true;
-          this.hasInjectedSchema = false;
-          this.updateWidget();
-          const existingButton = document.getElementById('sf-enhance-btn');
-          if (existingButton) existingButton.textContent = this.getButtonText();
-        }
       }
     };
     if (selectBusiness && !this.isLoadingSchemas) selectBusiness.addEventListener('change', onSelectChange);
     if (selectRole && !this.isLoadingSchemas) selectRole.addEventListener('change', onSelectChange);
     if (selectProject && !this.isLoadingSchemas) selectProject.addEventListener('change', onSelectChange);
+
+    const toggleBusiness = widget.querySelector('#sf-cat-toggle-business');
+    const toggleRole = widget.querySelector('#sf-cat-toggle-role');
+    const toggleProject = widget.querySelector('#sf-cat-toggle-project');
+    const onCategoryToggle = (category, checked) => {
+      if (!this.enabledCategories) this.enabledCategories = { business: true, role: true, project: true };
+      this.enabledCategories[category] = checked;
+      this.hasInjectedSchema = false;
+      chrome.storage.local.set({ enabledCategories: this.enabledCategories });
+      this.updateWidget();
+    };
+    if (toggleBusiness) toggleBusiness.addEventListener('change', (e) => onCategoryToggle('business', e.target.checked));
+    if (toggleRole) toggleRole.addEventListener('change', (e) => onCategoryToggle('role', e.target.checked));
+    if (toggleProject) toggleProject.addEventListener('change', (e) => onCategoryToggle('project', e.target.checked));
     
 
     // API Key management
@@ -1421,14 +1444,18 @@ class SchemaForge {
       return;
     }
 
-    // Collect selected schemas from state
-    const selectedIds = Object.values(this.selectedSchemasByCategory || {}).filter(Boolean);
+    // Collect selected schemas from state, respecting per-category toggles
+    const categories = ['business', 'role', 'project'];
+    const selectedIds = categories
+      .filter(cat => !this.enabledCategories || this.enabledCategories[cat])
+      .map(cat => (this.selectedSchemasByCategory || {})[cat])
+      .filter(Boolean);
     const selectedSchemas = selectedIds
       .map(id => this.schemas.find(s => s.id === id))
       .filter(Boolean);
 
     if (!selectedSchemas.length) {
-      this.showMessage('Select at least one schema (or set others to "Ignore this Type of Schema").', 'error');
+      this.showMessage('Turn ON and select at least one schema.', 'error');
       return;
     }
     
