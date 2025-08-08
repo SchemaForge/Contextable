@@ -529,7 +529,16 @@ class SchemaForge {
                   <input type="checkbox" id="sf-cat-toggle-project" ${this.enabledCategories && this.enabledCategories.project ? 'checked' : ''} />
                 </label>
               </div>
-              <!-- REPLACED: Project-specific dropdown with Enhancement information panel -->
+              <select id="sf-schema-select-project" style="display: ${projectSchemas.length ? 'block' : 'none'}; width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; background: white; font-size: 14px; margin-bottom: 12px;" ${this.isLoadingSchemas || !this.apiKey || (this.enabledCategories && !this.enabledCategories.project) ? 'disabled' : ''}>
+                ${!this.apiKey ? 
+                  '<option value="">Please configure API key first</option>' :
+                  this.isLoadingSchemas ? 
+                  '<option value="">Loading schemas...</option>' : 
+                  projectSchemas.length > 0 ?
+                  projectSchemas.map(s => `<option value="${s.id}" ${this.selectedSchemasByCategory && this.selectedSchemasByCategory.project === s.id ? 'selected' : ''}>${s.name}</option>`).join('') :
+                  ''
+                }
+              </select>
               <div id="sf-enhancement-info" style="background: #f9fafb; padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px;">
                 <div style="display: flex; align-items: center; justify-content: space-between;">
                   <div style="display: flex; align-items: center; gap: 8px;">
@@ -733,7 +742,7 @@ class SchemaForge {
     };
     if (selectBusiness && !this.isLoadingSchemas) selectBusiness.addEventListener('change', onSelectChange);
     if (selectRole && !this.isLoadingSchemas) selectRole.addEventListener('change', onSelectChange);
-    // Note: project dropdown removed; no listener added for it
+    if (selectProject && !this.isLoadingSchemas) selectProject.addEventListener('change', onSelectChange);
 
     const toggleBusiness = widget.querySelector('#sf-cat-toggle-business');
     const toggleRole = widget.querySelector('#sf-cat-toggle-role');
