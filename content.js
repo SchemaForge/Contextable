@@ -1472,9 +1472,10 @@ class SchemaForge {
 
   buildEnhancedPrompt(originalPrompt, schemasArray) {
     const selected = Array.isArray(schemasArray) ? schemasArray : [];
-    const businessSchema = selected.find(s => s.schemaTypeCategory === 'Business') || null;
-    const roleSchema = selected.find(s => s.schemaTypeCategory === 'Role-specific') || null;
-    const projectSchema = selected.find(s => s.schemaTypeCategory === 'Project-specific') || null;
+    const enabled = Object.assign({ business: true, role: true, project: true }, this.enabledCategories || {});
+    const businessSchema = enabled.business ? (selected.find(s => s.schemaTypeCategory === 'Business') || null) : null;
+    const roleSchema = enabled.role ? (selected.find(s => s.schemaTypeCategory === 'Role-specific') || null) : null;
+    const projectSchema = enabled.project ? (selected.find(s => s.schemaTypeCategory === 'Project-specific') || null) : null;
 
     const getCompanyBlock = (schema) => {
       if (!schema) return '';
@@ -1500,14 +1501,13 @@ class SchemaForge {
 
     const sections = [];
 
-    // Business context (prefer the explicit Business schema; if absent, fall back to any schema's company info)
-    const businessContextSource = businessSchema || selected[0] || null;
-    if (businessContextSource) {
-      sections.push(`BUSINESS CONTEXT (Enhanced by Context4U):\n\n${getCompanyBlock(businessContextSource)}`);
+    // Business context: only include when business category is enabled and a Business schema is selected
+    if (enabled.business && businessSchema) {
+      sections.push(`BUSINESS CONTEXT (Enhanced by Context4U):\n\n${getCompanyBlock(businessSchema)}`);
     }
 
     // Role persona & voice
-    if (roleSchema) {
+    if (enabled.role && roleSchema) {
       const roleName = roleSchema.name || (roleSchema.personas?.[0]?.name) || 'Role Specialist';
       const roleRules = Array.isArray(roleSchema.rules) ? roleSchema.rules : [];
       const roleObjectives = Array.isArray(roleSchema.objectives) && roleSchema.objectives.length ? roleSchema.objectives[0] : null;
@@ -1526,7 +1526,7 @@ class SchemaForge {
     }
 
     // Project context
-    if (projectSchema) {
+    if (enabled.project && projectSchema) {
       const companyName = (businessSchema?.company?.name) || (projectSchema.company?.name) || 'the user\'s company';
       const tone = (businessSchema?.company?.tone) || (projectSchema.company?.tone);
       const objective = Array.isArray(projectSchema.objectives) && projectSchema.objectives.length ? projectSchema.objectives[0] : null;
@@ -1547,8 +1547,8 @@ class SchemaForge {
 
     // Compose final prompt with clear directives
     const directives = [];
-    if (roleSchema) directives.push('Adopt the role-first-person perspective and priorities above.');
-    if (projectSchema) directives.push('Frame all recommendations within the project context for the user\'s company.');
+    if (enabled.role && roleSchema) directives.push('Adopt the role-first-person perspective and priorities above.');
+    if (enabled.project && projectSchema) directives.push('Frame all recommendations within the project context for the user\'s company.');
     directives.push('Respect any brand tone, values, objectives and rules specified above.');
 
     const header = sections.join('\n\n---\n\n');
