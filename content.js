@@ -22,6 +22,10 @@ class SchemaForge {
     // NEW: enhancement information UI state
     this.infoViewMode = 'list';
     this.infoCollapsed = true;
+    // Store last enhancement for Before/After view
+    this.lastOriginalPrompt = '';
+    this.lastEnhancedPrompt = '';
+    this.lastEnhancedAt = null;
     
     this.init();
 
@@ -474,6 +478,7 @@ class SchemaForge {
         <div style="display: flex; background: #f9fafb; border-bottom: 1px solid #e5e7eb;">
           <div class="sf-nav-tab ${this.currentWidgetPage === 'schemas' ? 'active' : ''}" data-page="schemas" style="flex: 1; padding: 12px; text-align: center; cursor: pointer; font-weight: 500; color: ${this.currentWidgetPage === 'schemas' ? '#3b82f6' : '#6b7280'}; border-bottom: 2px solid ${this.currentWidgetPage === 'schemas' ? '#3b82f6' : 'transparent'}; background: ${this.currentWidgetPage === 'schemas' ? 'white' : 'transparent'}; transition: all 0.2s;">Schemas</div>
           <div class="sf-nav-tab ${this.currentWidgetPage === 'user' ? 'active' : ''}" data-page="user" style="flex: 1; padding: 12px; text-align: center; cursor: pointer; font-weight: 500; color: ${this.currentWidgetPage === 'user' ? '#3b82f6' : '#6b7280'}; border-bottom: 2px solid ${this.currentWidgetPage === 'user' ? '#3b82f6' : 'transparent'}; background: ${this.currentWidgetPage === 'user' ? 'white' : 'transparent'}; transition: all 0.2s;">User</div>
+          <div class="sf-nav-tab ${this.currentWidgetPage === 'beforeafter' ? 'active' : ''}" data-page="beforeafter" style="flex: 1; padding: 12px; text-align: center; cursor: pointer; font-weight: 500; color: ${this.currentWidgetPage === 'beforeafter' ? '#3b82f6' : '#6b7280'}; border-bottom: 2px solid ${this.currentWidgetPage === 'beforeafter' ? '#3b82f6' : 'transparent'}; background: ${this.currentWidgetPage === 'beforeafter' ? 'white' : 'transparent'}; transition: all 0.2s;">Before/After</div>
         </div>
         
         <!-- Content -->
@@ -483,6 +488,7 @@ class SchemaForge {
             <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f9fafb; border-radius: 8px; margin-bottom: 20px;">
               <span>Schema Enhancement</span>
               <button id="sf-toggle" style="background: ${this.isActive ? '#10b981' : '#6b7280'}; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500;">${this.isActive ? 'ON' : 'OFF'}</button>
+              <button id="sf-beforeafter-btn" style="background: ${this.currentWidgetPage === 'beforeafter' ? '#3b82f6' : '#6b7280'}; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: ${this.lastEnhancedPrompt ? 'pointer' : 'not-allowed'}; font-weight: 500; margin-left: 8px; opacity: ${this.lastEnhancedPrompt ? '1' : '0.6'};" ${this.lastEnhancedPrompt ? '' : 'disabled'}>Before/After</button>
             </div>
             
             <div style="margin-bottom: 20px;">
@@ -559,6 +565,11 @@ class SchemaForge {
               </div>
               
             </div>
+          </div>
+          
+          <!-- Before/After Page -->
+          <div id="sf-beforeafter-page" class="sf-page" style="display: ${this.currentWidgetPage === 'beforeafter' ? 'block' : 'none'};">
+            ${this.renderBeforeAfterPage()}
           </div>
           
           <!-- User Page -->
@@ -710,6 +721,15 @@ class SchemaForge {
           this.hasInjectedSchema = false;
         }
         this.updateWidget();
+      });
+    }
+
+    // Before/After button
+    const beforeAfterBtn = widget.querySelector('#sf-beforeafter-btn');
+    if (beforeAfterBtn) {
+      beforeAfterBtn.addEventListener('click', () => {
+        if (!this.lastEnhancedPrompt) return;
+        this.switchWidgetPage('beforeafter');
       });
     }
 
@@ -1520,6 +1540,11 @@ class SchemaForge {
     
     // Hide the button after successful injection
     this.hideButtonAfterInjection();
+    
+    // Record last enhancement for Before/After view
+    this.lastOriginalPrompt = originalText.trim();
+    this.lastEnhancedPrompt = enhanced;
+    this.lastEnhancedAt = Date.now();
   }
 
   buildEnhancedPrompt(originalPrompt, schemasArray) {
@@ -1869,6 +1894,59 @@ class SchemaForge {
       .replace(/>/g, '&gt;')
       .replace(/\"/g, '&quot;')
       .replace(/'/g, '&#039;');
+  }
+
+  // Render the Before/After page showing latest enhancement diff
+  renderBeforeAfterPage() {
+    if (!this.lastEnhancedPrompt) {
+      return '<div style="color:#6b7280; font-size:12px;">No enhancements yet. Click Enhance to generate an example, then return here.</div>';
+    }
+    const ts = this.lastEnhancedAt ? new Date(this.lastEnhancedAt).toLocaleString() : 'recently';
+    const beforeEsc = this.escapeHtml(this.lastOriginalPrompt || '');
+    const afterEsc = this.escapeHtml(this.lastEnhancedPrompt || '');
+    const addedOnly = this.escapeHtml(this.getAddedOnly(this.lastEnhancedPrompt || '', this.lastOriginalPrompt || ''));
+    return `
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+        <h3 style="margin:0; font-size:16px; color:#111827;">Before/After</h3>
+        <div style="font-size:12px; color:#6b7280;">Most recent enhancement: ${ts}</div>
+      </div>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+        <div style="background:#ffffff; border:1px solid #e5e7eb; border-radius:8px; padding:10px;">
+          <div style="font-weight:600; color:#374151; margin-bottom:6px;">Original prompt</div>
+          <pre style="margin:0; font-size:12px; color:#111827; white-space:pre-wrap;">${beforeEsc}</pre>
+        </div>
+        <div style="background:#ffffff; border:1px solid #e5e7eb; border-radius:8px; padding:10px;">
+          <div style="font-weight:600; color:#374151; margin-bottom:6px;">Enhanced prompt</div>
+          <pre style="margin:0; font-size:12px; color:#111827; white-space:pre-wrap;">${afterEsc}</pre>
+        </div>
+      </div>
+      <div style="margin-top:12px; background:#ecfdf5; border:1px solid #a7f3d0; border-radius:8px; padding:10px;">
+        <div style="font-weight:600; color:#065f46; margin-bottom:6px;">Added by Context4U</div>
+        <pre style="margin:0; font-size:12px; color:#064e3b; white-space:pre-wrap;">${addedOnly}</pre>
+      </div>
+    `;
+  }
+
+  // Extract content that was added beyond the user's original prompt
+  getAddedOnly(after, before) {
+    try {
+      const marker = 'USER REQUEST: ';
+      const idxMarker = after.indexOf(marker);
+      if (idxMarker >= 0) {
+        const afterMarker = after.slice(idxMarker + marker.length);
+        if (afterMarker.startsWith(before)) {
+          const beforeStart = idxMarker; // start of 'USER REQUEST: '
+          const beforeEnd = idxMarker + marker.length + before.length;
+          const prefix = after.slice(0, beforeStart);
+          const suffix = after.slice(beforeEnd);
+          return (prefix + suffix).trim();
+        }
+      }
+      // Fallback: if we can't detect, just return entire enhanced prompt
+      return after;
+    } catch (e) {
+      return after;
+    }
   }
 }
 
