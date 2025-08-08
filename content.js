@@ -1,7 +1,7 @@
 // Simple Working SchemaForge Chrome Extension
 // Replace your entire content.js with this clean version
 
-console.log('Contextable: Loading extension...');
+console.log('Context4U: Loading extension...');
 
 class SchemaForge {
   constructor() {
@@ -17,6 +17,7 @@ class SchemaForge {
     this.apiKey = null;
     this.apiUrl = 'https://uycbruvaxgawpmdddqry.supabase.co/functions/v1/user-schemas-api';
     this.isLoadingSchemas = true;
+    this.selectedSchemasByCategory = { business: null, role: null, project: null };
     
     this.init();
   }
@@ -33,7 +34,7 @@ class SchemaForge {
   }
 
   async init() {
-          console.log('Contextable: Initializing...');
+          console.log('Context4U: Initializing...');
     this.createWidget();
     
     // Load API key first
@@ -51,7 +52,7 @@ class SchemaForge {
           this.updateWidget();
           // Show a brief success message
           setTimeout(() => {
-            this.showMessage(`Contextable ready! ${result.schemaCount} schema${result.schemaCount !== 1 ? 's' : ''} loaded.`, 'success');
+            this.showMessage(`Context4U ready! ${result.schemaCount} schema${result.schemaCount !== 1 ? 's' : ''} loaded.`, 'success');
           }, 1000);
         }
       } catch (error) {
@@ -162,6 +163,15 @@ class SchemaForge {
         if (!testApiKey) {
           this.schemas = schemas;
           this.activeSchema = this.schemas.length > 0 ? this.schemas[0] : null;
+          // Initialize per-category selected schema defaults
+          const firstBusiness = this.schemas.find(s => s.schemaTypeCategory === 'Business');
+          const firstRole = this.schemas.find(s => s.schemaTypeCategory === 'Role-specific');
+          const firstProject = this.schemas.find(s => s.schemaTypeCategory === 'Project-specific');
+          this.selectedSchemasByCategory = {
+            business: firstBusiness ? firstBusiness.id : null,
+            role: firstRole ? firstRole.id : null,
+            project: firstProject ? firstProject.id : null
+          };
           console.log('Contextable: Loaded', this.schemas.length, 'schemas from API');
           this.isLoadingSchemas = false;
           this.updateWidget();
@@ -350,7 +360,7 @@ class SchemaForge {
     }
     
             // Default to "Contextable" for initial load and before user selects a schema
-        return '✨ Enhance with Contextable ';
+        return '✨ Enhance with Context4U ';
   }
 
   hideButtonAfterInjection() {
@@ -441,7 +451,7 @@ class SchemaForge {
       <div style="background: white; border: 2px solid #3b82f6; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; width: 100%;">
         <!-- Header -->
         <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
-          <h1 style="margin: 0; font-size: 18px; font-weight: 600;">Contextable</h1>
+          <h1 style="margin: 0; font-size: 18px; font-weight: 600;">Context4U</h1>
           <p style="margin: 4px 0 0 0; opacity: 0.9; font-size: 12px;">AI Context Enhancement</p>
         </div>
         
@@ -467,8 +477,11 @@ class SchemaForge {
                   '<option value="">Please configure API key first</option>' :
                   this.isLoadingSchemas ? 
                   '<option value="">Loading schemas...</option>' : 
-                  businessSchemas.length > 0 ? 
-                  businessSchemas.map(s => `<option value="${s.id}" ${this.activeSchema && s.id === this.activeSchema.id ? 'selected' : ''}>${s.name}</option>`).join('') :
+                  businessSchemas.length > 0 ?
+                  [
+                    `<option value="__ignore__" ${this.selectedSchemasByCategory && this.selectedSchemasByCategory.business === null ? 'selected' : ''}>Ignore this Type of Schema</option>`,
+                    ...businessSchemas.map(s => `<option value="${s.id}" ${this.selectedSchemasByCategory && this.selectedSchemasByCategory.business === s.id ? 'selected' : ''}>${s.name}</option>`)
+                  ].join('') :
                   ''
                 }
               </select>
@@ -480,7 +493,10 @@ class SchemaForge {
                   this.isLoadingSchemas ? 
                   '<option value="">Loading schemas...</option>' : 
                   roleSchemas.length > 0 ? 
-                  roleSchemas.map(s => `<option value="${s.id}" ${this.activeSchema && s.id === this.activeSchema.id ? 'selected' : ''}>${s.name}</option>`).join('') :
+                  [
+                    `<option value="__ignore__" ${this.selectedSchemasByCategory && this.selectedSchemasByCategory.role === null ? 'selected' : ''}>Ignore this Type of Schema</option>`,
+                    ...roleSchemas.map(s => `<option value="${s.id}" ${this.selectedSchemasByCategory && this.selectedSchemasByCategory.role === s.id ? 'selected' : ''}>${s.name}</option>`)
+                  ].join('') :
                   ''
                 }
               </select>
@@ -492,7 +508,10 @@ class SchemaForge {
                   this.isLoadingSchemas ? 
                   '<option value="">Loading schemas...</option>' : 
                   projectSchemas.length > 0 ? 
-                  projectSchemas.map(s => `<option value="${s.id}" ${this.activeSchema && s.id === this.activeSchema.id ? 'selected' : ''}>${s.name}</option>`).join('') :
+                  [
+                    `<option value="__ignore__" ${this.selectedSchemasByCategory && this.selectedSchemasByCategory.project === null ? 'selected' : ''}>Ignore this Type of Schema</option>`,
+                    ...projectSchemas.map(s => `<option value="${s.id}" ${this.selectedSchemasByCategory && this.selectedSchemasByCategory.project === s.id ? 'selected' : ''}>${s.name}</option>`)
+                  ].join('') :
                   ''
                 }
               </select>
@@ -663,18 +682,36 @@ class SchemaForge {
     const selectRole = widget.querySelector('#sf-schema-select-role');
     const selectProject = widget.querySelector('#sf-schema-select-project');
     const onSelectChange = (e) => {
-      const selectedSchema = this.schemas.find(s => s.id === e.target.value);
-      if (selectedSchema) {
-        this.activeSchema = selectedSchema;
+      const value = e.target.value;
+      const isIgnore = value === '__ignore__' || value === '';
+      let category = null;
+      if (e.target.id === 'sf-schema-select-business') category = 'business';
+      if (e.target.id === 'sf-schema-select-role') category = 'role';
+      if (e.target.id === 'sf-schema-select-project') category = 'project';
+
+      if (!this.selectedSchemasByCategory) {
+        this.selectedSchemasByCategory = { business: null, role: null, project: null };
+      }
+
+      if (isIgnore) {
+        if (category) this.selectedSchemasByCategory[category] = null;
+        // Do not change activeSchema when ignoring a category
         this.userSelectedSchema = true;
         this.hasInjectedSchema = false;
         this.updateWidget();
         const existingButton = document.getElementById('sf-enhance-btn');
         if (existingButton) existingButton.textContent = this.getButtonText();
       } else {
-        this.activeSchema = null;
-        this.hasInjectedSchema = false;
-        this.updateWidget();
+        const selectedSchema = this.schemas.find(s => s.id === value);
+        if (selectedSchema) {
+          if (category) this.selectedSchemasByCategory[category] = selectedSchema.id;
+          this.activeSchema = selectedSchema; // keep preview/button text meaningful
+          this.userSelectedSchema = true;
+          this.hasInjectedSchema = false;
+          this.updateWidget();
+          const existingButton = document.getElementById('sf-enhance-btn');
+          if (existingButton) existingButton.textContent = this.getButtonText();
+        }
       }
     };
     if (selectBusiness && !this.isLoadingSchemas) selectBusiness.addEventListener('change', onSelectChange);
@@ -1363,15 +1400,10 @@ class SchemaForge {
   }
 
   enhancePrompt() {
-          console.log('Contextable: Enhance button clicked');
+          console.log('Context4U: Enhance button clicked');
     
     if (!this.isActive) {
-              this.showMessage('Please turn ON Contextable first!', 'error');
-      return;
-    }
-    
-    if (!this.activeSchema) {
-      this.showMessage('Please select a schema first!', 'error');
+              this.showMessage('Please turn ON Context4U first!', 'error');
       return;
     }
     
@@ -1388,10 +1420,21 @@ class SchemaForge {
       this.showMessage('Please type a prompt first!', 'error');
       return;
     }
+
+    // Collect selected schemas from state
+    const selectedIds = Object.values(this.selectedSchemasByCategory || {}).filter(Boolean);
+    const selectedSchemas = selectedIds
+      .map(id => this.schemas.find(s => s.id === id))
+      .filter(Boolean);
+
+    if (!selectedSchemas.length) {
+      this.showMessage('Select at least one schema (or set others to "Ignore this Type of Schema").', 'error');
+      return;
+    }
     
-    const enhanced = this.buildEnhancedPrompt(originalText.trim());
+    const enhanced = this.buildEnhancedPrompt(originalText.trim(), selectedSchemas);
     this.setText(input, enhanced);
-    this.showMessage(`Schema "${this.activeSchema.name}" applied! ✨`, 'success');
+    this.showMessage(`Applied ${selectedSchemas.length} schema${selectedSchemas.length !== 1 ? 's' : ''}! ✨`, 'success');
     
     // Mark that schema has been successfully injected
     this.hasInjectedSchema = true;
@@ -1400,30 +1443,23 @@ class SchemaForge {
     this.hideButtonAfterInjection();
   }
 
-  buildEnhancedPrompt(originalPrompt) {
-    const schema = this.activeSchema;
-    
-          return `BUSINESS CONTEXT (Enhanced by Contextable):
+  buildEnhancedPrompt(originalPrompt, schemasArray) {
+    const blocks = (schemasArray || []).map(schema => {
+      return `Company: ${schema.company.name} - ${schema.company.industry}\n` +
+             `Brand Tone: ${schema.company.tone}\n` +
+             `Core Values: ${schema.company.values.join(', ')}\n\n` +
+             `TARGET PERSONA: ${schema.personas[0].name}\n` +
+             `- Key Traits: ${schema.personas[0].traits.join(', ')}\n` +
+             `- Pain Points: ${schema.personas[0].painPoints.join(', ')}\n` +
+             `- Preferred Channels: ${schema.personas[0].channels.join(', ')}\n\n` +
+             `CURRENT OBJECTIVES:\n` +
+             `- ${schema.objectives[0].description}\n` +
+             `- Key Metrics: ${schema.objectives[0].kpis.join(', ')}\n\n` +
+             `BRAND GUIDELINES:\n` +
+             `${schema.rules.map(rule => `- ${rule}`).join('\n')}`;
+    }).join('\n\n---\n\n');
 
-Company: ${schema.company.name} - ${schema.company.industry}
-Brand Tone: ${schema.company.tone}
-Core Values: ${schema.company.values.join(', ')}
-
-TARGET PERSONA: ${schema.personas[0].name}
-- Key Traits: ${schema.personas[0].traits.join(', ')}
-- Pain Points: ${schema.personas[0].painPoints.join(', ')}
-- Preferred Channels: ${schema.personas[0].channels.join(', ')}
-
-CURRENT OBJECTIVES:
-- ${schema.objectives[0].description}
-- Key Metrics: ${schema.objectives[0].kpis.join(', ')}
-
-BRAND GUIDELINES:
-${schema.rules.map(rule => `- ${rule}`).join('\n')}
-
-USER REQUEST: ${originalPrompt}
-
-Please respond according to the business context above, ensuring the output matches our brand tone, addresses our target persona's needs, and supports our current objectives.`;
+    return `BUSINESS CONTEXT (Enhanced by Context4U):\n\n${blocks}\n\nUSER REQUEST: ${originalPrompt}\n\nPlease respond according to the contexts above, ensuring the output matches brand tone(s), addresses the target persona(s), and supports the current objective(s).`;
   }
 
   showMessage(text, type = 'info') {
@@ -1639,12 +1675,12 @@ if (document.readyState === 'loading') {
 
 // Debug function
   window.debugContextable = function() {
-    console.log('=== Contextable Debug ===');
+    console.log('=== Context4U Debug ===');
   const sf = window.schemaForge;
   if (sf) {
     console.log('Extension loaded:', true);
     console.log('Active:', sf.isActive);
-    console.log('Schema:', sf.activeSchema.name);
+    console.log('Schema:', sf.activeSchema ? sf.activeSchema.name : '(none)');
     console.log('Input found:', !!sf.findInput());
     const input = sf.findInput();
     if (input) {
